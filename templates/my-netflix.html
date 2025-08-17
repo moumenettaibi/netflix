@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='netflix-logo.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='netflix-logo.png') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='netflix-logo.png') }}">
+    <link rel="icon" href="{{ url_for('static', filename='netflix-logo.png') }}">
     <title>My Netflix</title>
     <style>
         :root {
@@ -820,7 +821,7 @@
             const posterElement = document.createElement('div');
             posterElement.classList.add('poster-card');
             posterElement.dataset.id = item.id;
-            posterElement.dataset.type = mediaType;
+            posterElement.dataset.type = mediaType || item.media_type;
 
             posterElement.innerHTML = `
                 <img src="${posterBaseUrl}${item.poster_path}" alt="${item.title || item.name}">
@@ -874,7 +875,7 @@
                 <div class="hover-card-body">
                     <div class="hover-action-buttons">
                         <a href="${playerUrl}" class="action-btn play-btn js-play-trigger" title="Play"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"></path></svg></a>
-                        <button class="action-btn add-list-btn ${addedClass}" title="Add to My List" onclick="addToMyList('${itemId}', '${mediaType}', this)"><svg viewBox="0 0 24 24">${addListIcon}</svg></button>
+                        <button class="action-btn add-list-btn ${addedClass}" title="Add to My List" onclick="addToMyList('${itemId}', '${mediaType}', this)">${addListIcon}</button>
                         <button class="action-btn like-btn ${likedClass}" title="Like" onclick="addToLikedList('${itemId}', '${mediaType}', this)"><svg viewBox="0 0 24 24"><path d="M23,10C23,8.89,22.1,8,21,8H14.68L15.64,3.43C15.66,3.33,15.67,3.22,15.67,3.11C15.67,2.7,15.5,2.32,15.23,2.05L14.17,1L7.59,7.59C7.22,7.95,7,8.45,7,9V19A2,2 0 0,0 9,21H18C18.83,21,19.54,20.5,19.84,19.78L22.86,12.73C22.95,12.5,23,12.26,23,12V10M1,21H5V9H1V21Z"></path></svg></button>
                         <button class="action-btn more-info-btn" title="More Info" data-id="${itemId}" data-type="${mediaType}"><svg viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"></path></svg></button>
                     </div>
@@ -905,7 +906,7 @@
             grid.innerHTML = '';
             if (dataList.length > 0) {
                 dataList.forEach(item => {
-                    const card = createPosterCard(item);
+                    const card = createPosterCard(item, item.media_type);
                     if (card) grid.appendChild(card);
                 });
             }
@@ -955,14 +956,14 @@
                 myList.splice(existsIndex, 1);
                 setStorageData(STORAGE_KEYS.MY_LIST, myList);
                 buttonElement.classList.remove('added');
-                buttonElement.querySelector('svg').innerHTML = '<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path>';
+                buttonElement.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
                 showToast(`Removed "${data.title || data.name}" from My List`);
             } else {
                 data.media_type = mediaType;
                 myList.unshift(data);
                 setStorageData(STORAGE_KEYS.MY_LIST, myList);
                 buttonElement.classList.add('added');
-                buttonElement.querySelector('svg').innerHTML = '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path>';
+                buttonElement.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>';
                 showToast(`Added "${data.title || data.name}" to My List`);
             }
             displayMyList();
