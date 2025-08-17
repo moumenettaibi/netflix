@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='netflix-logo.png') }}">
+
+    <title>Netflix</title>
+    <style>
+        :root {
+            --netflix-red: #e50914;
+            --background-color: #141414;
+            --card-color: #181818;
+            --text-color: #fff;
+            --text-secondary-color: #b3b3b3;
+            --text-muted-color: #777;
+            /* Added for modal labels */
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        /* --- HEADER STYLES --- */
+        header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px 50px;
+            box-sizing: border-box;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 10%, rgba(0, 0, 0, 0));
+            transition: background-color 0.3s ease;
+        }
+
+        header.scrolled {
+            position: fixed;
+            background-color: var(--background-color);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 50px;
+        }
+
+        .header-right {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-logo {
+            height: 35px;
+            width: auto;
+        }
+
+        .main-nav ul {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            gap: 35px;
+        }
+
+        .main-nav li a {
+            color: var(--text-secondary-color);
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .main-nav li a:hover {
+            color: var(--text-color);
+        }
+
+        .main-nav li.active a {
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .nav-search-icon {
+            height: 24px;
+            width: 24px;
+            cursor: pointer;
+            fill: var(--text-color);
+        }
+
+        /* --- MODIFIED IN-HEADER SEARCH (IMPROVED) --- */
+        .search-bar-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0);
+            height: 34px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+
+        .search-bar-container .search-icon-input {
+            height: 20px;
+            width: 20px;
+            fill: var(--text-color);
+            margin: 0 10px;
+        }
+
+        #header-search-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-color);
+            font-size: 1rem;
+            width: 0;
+            padding: 0;
+            transition: width 0.4s ease, padding 0.4s ease;
+        }
+
+        #close-search-icon {
+            display: none;
+            cursor: pointer;
+            color: var(--text-color);
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        body.search-active .search-bar-container {
+            opacity: 1;
+            visibility: visible;
+            border: 1px solid rgba(255, 255, 255, 0.85);
+        }
+
+        body.search-active #header-search-input {
+            width: 270px;
+            padding-right: 35px;
+        }
+
+        body.search-active #search-icon-trigger {
+            display: none;
+        }
+
+        body.search-active #close-search-icon {
+            display: block;
+        }
+
+        /* --- HERO SECTION --- */
+        .hero-container {
+            width: 100%;
+            height: 95vh;
+            position: relative;
+            background-size: cover;
+            background-position: center top;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 50px;
+            box-sizing: border-box;
+            transition: background-image 1s ease-in-out;
+        }
+
+        .hero-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(20, 20, 20, 1) 0%, rgba(20, 20, 20, 0) 50%),
+                linear-gradient(to top, rgba(20, 20, 20, 1) 0%, rgba(20, 20, 20, 0) 25%);
+        }
+
+        .hero-content {
+            z-index: 1;
+            max-width: 45%;
+            position: relative;
+        }
+
+        .hero-rank-badge {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .hero-rank-square {
+            background-color: var(--netflix-red);
+            color: white;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            border-radius: 3px;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .hero-rank-square .top-text {
+            font-size: 0.5rem;
+            letter-spacing: 0.5px;
+            margin-bottom: 1px;
+        }
+
+        .hero-rank-square .number-text {
+            font-size: 0.9rem;
+            font-weight: 900;
+            letter-spacing: 0;
+        }
+
+        .hero-rank-text {
+            color: white;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .hero-title {
+            font-size: 4.5rem;
+            font-weight: 800;
+            margin: 0 0 20px;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        }
+
+        .hero-overview {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .btn {
+            border: none;
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+
+        .btn-play {
+            background-color: white;
+            color: black;
+        }
+
+        .btn-play:hover {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .btn-play svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+        }
+
+        .btn-more-info {
+            background-color: rgba(109, 109, 110, 0.7);
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-more-info:hover {
+            background-color: rgba(109, 109, 110, 0.4);
+        }
+
+        .btn-more-info svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* --- MAIN CONTENT & ROWS --- */
+        main {
+            padding-top: 0;
+            margin-top: -80px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .content-row {
+            width: 100%;
+            margin: 0 auto 50px;
+            padding: 0 50px;
+            box-sizing: border-box;
+        }
+
+        .content-row h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .content-scroll {
+            display: flex;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 40px 0 40px 10px;
+            scrollbar-width: none;
+        }
+
+        .content-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* --- CARD STYLES --- */
+        .poster-card {
+            width: 240px;
+            height: 360px;
+            border-radius: 4px;
+            overflow: visible;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .content-scroll>.poster-card {
+            margin-right: 10px;
+            /* Spacing for non-ranked rows */
+        }
+
+        /* --- CONTAINER FOR RANKED ITEMS --- */
+        .ranked-item-container {
+            display: flex;
+            align-items: center;
+            /* Aligns bottoms of number and poster */
+            flex-shrink: 0;
+            margin-right: 90px;
+            /* Space between ranked items */
+        }
+
+        /* --- GIANT RANK NUMBER STYLES --- */
+        .rank-number {
+            font-size: 28rem;
+            font-weight: 700;
+            color: black;
+            -webkit-text-stroke: 5px #cbcbcb;
+            text-stroke: 1px #aaa;
+            line-height: 0.8;
+            margin-right: -48px;
+            /* Pulls the poster closer to the number */
+        }
+
+        .poster-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .hover-card-details {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 140%;
+            background-color: var(--card-color);
+            border-radius: 6px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+            transition: all 0.25s ease-in-out, visibility 0s linear 0.25s;
+            pointer-events: none;
+            z-index: 99;
+            overflow: hidden;
+            visibility: hidden;
+        }
+
+        .ranked-item-container:hover .poster-card,
+        .poster-card:hover {
+            z-index: 100;
+        }
+
+        .ranked-item-container:hover .hover-card-details,
+        .poster-card:hover .hover-card-details {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+            visibility: visible;
+            transition-delay: 0.5s, 0s;
+        }
+
+        .hover-card-media {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hover-card-body {
+            padding: 20px;
+        }
+
+        .hover-action-buttons {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            background-color: rgba(42, 42, 42, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            border-color: white;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .action-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .action-btn:hover svg {
+            fill: black;
+        }
+
+        .action-btn.more-info-btn {
+            margin-left: auto;
+        }
+
+        .hover-card-overview {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            height: 60px;
+            overflow: hidden;
+        }
+
+        .hover-card-meta {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .meta-rating {
+            border: 1px solid var(--text-secondary-color);
+            padding: 2px 5px;
+        }
+
+        .hover-card-genres {
+            font-size: 0.8rem;
+            color: var(--text-secondary-color);
+            line-height: 1.4;
+        }
+
+        .hover-card-genres span::after {
+            content: ' • ';
+            margin: 0 5px;
+        }
+
+        .hover-card-genres span:last-child::after {
+            content: '';
+        }
+
+        .loader {
+            width: 32px;
+            height: 32px;
+            border: 4px solid var(--text-color);
+            border-bottom-color: var(--netflix-red);
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* --- SEARCH RESULTS SECTION STYLES --- */
+        .search-results-section {
+            display: none;
+            padding: 120px 50px 50px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        #search-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 10px;
+            width: 100%;
+        }
+
+        #search-feedback {
+            color: var(--text-secondary-color);
+            font-size: 1.5rem;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        /* --- INFO MODAL STYLES --- */
+        #info-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #info-modal.active {
+            display: flex;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+        }
+
+        .modal-content-wrapper {
+            position: relative;
+            width: 90%;
+            max-width: 850px;
+            background-color: var(--background-color);
+            border-radius: 8px;
+            box-shadow: 0px 3px 15px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            animation: modal-fade-in 0.3s ease-out;
+            max-height: 95vh;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .modal-content-wrapper::-webkit-scrollbar {
+            display: none;
+        }
+
+        @keyframes modal-fade-in {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-media-container {
+            position: relative;
+            padding-top: 56.25%;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .modal-media-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to top, var(--background-color), transparent);
+        }
+
+        .modal-media-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #181818;
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            line-height: 36px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .modal-content-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            padding: 0 48px 48px 48px;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 5;
+        }
+
+        .modal-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: #fff;
+            margin: 0 0 20px 0;
+        }
+
+        .modal-action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-play-btn {
+            background-color: #fff;
+            color: #000;
+            padding: 8px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .modal-play-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .modal-icon-btn {
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            background-color: rgba(42, 42, 42, 0.6);
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .modal-icon-btn:hover {
+            border-color: #fff;
+        }
+
+        .modal-icon-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: #fff;
+        }
+
+        .modal-body {
+            padding: 16px 48px 32px 48px;
+        }
+
+        .modal-metadata-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 24px;
+        }
+
+        .metadata-badge {
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 1px 8px;
+            font-size: 14px;
+            border-radius: 3px;
+        }
+
+        .modal-main-content-grid {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 32px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .modal-meta-data p {
+            margin: 0 0 16px;
+        }
+
+        .modal-meta-data .label {
+            color: var(--text-muted-color);
+        }
+
+        .modal-meta-data .value {
+            color: var(--text-color);
+        }
+
+        /* --- FULL SCREEN PLAYER MODAL STYLES --- */
+        .player-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .player-modal.active {
+            display: flex;
+        }
+
+        #player-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        #player-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .close-player-btn {
+            position: absolute;
+            top: 30px;
+            left: 40px;
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            z-index: 10000;
+        }
+
+        .close-player-btn svg {
+            width: 36px;
+            height: 36px;
+            fill: #fff;
+            transition: transform 0.2s ease;
+        }
+
+        .close-player-btn:hover svg {
+            transform: scale(1.1);
+        }
+
+        /* --- TOAST NOTIFICATION STYLES --- */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--card-color);
+            color: var(--text-color);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-size: 1rem;
+            border-left: 4px solid var(--netflix-red);
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-left">
+            <a href="/browse"><img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg"
+                    alt="Netflix Logo" class="header-logo"></a>
+            <nav class="main-nav">
+                <ul>
+                    <li class="active"><a href="#">Home</a></li>
+                    <li><a href="#">Shows</a></li>
+                    <li><a href="#">Movies</a></li>
+                    <li><a href="/my-netflix">My Netflix</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div id="search-bar-container" class="search-bar-container">
+                <svg class="search-icon-input" viewBox="0 0 24 24">
+                    <path
+                        d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z">
+                    </path>
+                </svg>
+                <input type="text" id="header-search-input" placeholder="Titles, people, genres" autocomplete="off">
+                <span id="close-search-icon">&times;</span>
+            </div>
+            <svg id="search-icon-trigger" class="nav-search-icon" viewBox="0 0 24 24">
+                <path
+                    d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z">
+                </path>
+            </svg>
+        </div>
+    </header>
+
+    <section id="search-results-section" class="search-results-section">
+        <div id="search-results"></div>
+        <div id="search-feedback"></div>
+    </section>
+
+    <section id="hero-container" class="hero-container"></section>
+
+    <main id="main-content">
+        <div class="content-row">
+            <h2 id="movies-heading">Top 10 Movies Today</h2>
+            <div class="content-scroll" id="trending-movies">
+                <div class="loader"></div>
+            </div>
+        </div>
+        <div class="content-row">
+            <h2 id="tv-heading">Top 10 TV Shows Today</h2>
+            <div class="content-scroll" id="trending-shows">
+                <div class="loader"></div>
+            </div>
+        </div>
+
+        <div id="genre-rows"></div>
+    </main>
+
+    <div id="info-modal"></div>
+
+    <div id="player-modal" class="player-modal">
+        <button id="close-player-btn" class="close-player-btn" title="Back to Browse">
+            <svg viewBox="0 0 24 24">
+                <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path>
+            </svg>
+        </button>
+        <div id="player-container"></div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <footer></footer>
+
+    <script>
+        const apiKey = 'f2d7ae9dee829174c475e32fe8f993dc';
+        const posterBaseUrl = 'https://image.tmdb.org/t/p/w500';
+        const backdropBaseUrl = 'https://image.tmdb.org/t/p/original';
+        const playerBaseUrl = 'https://player.videasy.net'; // External player service
+
+        // --- createPosterCard is now simplified ---
+        function createPosterCard(item, mediaType) {
+            if (!item.poster_path) return null;
+
+            const posterElement = document.createElement('div');
+            posterElement.classList.add('poster-card');
+            posterElement.dataset.id = item.id;
+            posterElement.dataset.type = mediaType || item.media_type;
+
+            posterElement.innerHTML = `
+                <img src="${posterBaseUrl}${item.poster_path}" alt="${item.title || item.name}">
+                <div class="hover-card-details">
+                    <div class="hover-card-media">
+                        <div class="loader"></div>
+                    </div>
+                </div>
+            `;
+            return posterElement;
+        }
+
+        // --- displayContentRow creates the ranked container ---
+        function displayContentRow(items, container, mediaType, isRankedList = false) {
+            container.innerHTML = '';
+            items.forEach((item, index) => {
+                const card = createPosterCard(item, mediaType);
+                if (!card) return;
+
+                if (isRankedList) {
+                    const rankedContainer = document.createElement('div');
+                    rankedContainer.classList.add('ranked-item-container');
+
+                    const rankNumber = document.createElement('div');
+                    rankNumber.classList.add('rank-number');
+                    // --- MODIFIED: Removed padStart to show "1" instead of "01" ---
+                    rankNumber.textContent = index + 1;
+
+                    rankedContainer.appendChild(rankNumber);
+                    rankedContainer.appendChild(card);
+                    container.appendChild(rankedContainer);
+                } else {
+                    container.appendChild(card);
+                }
+            });
+        }
+
+
+        // --- FETCH & POPULATE HOVER CARD ---
+        async function fetchAndPopulateHoverCard(card) {
+            if (card.dataset.detailsLoaded === 'true') return;
+            card.dataset.detailsLoaded = 'true';
+
+            const mediaType = card.dataset.type;
+            const itemId = card.dataset.id;
+            const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
+            const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}&append_to_response=content_ratings`;
+
+            const data = await fetchData(url);
+            if (!data) return;
+
+            const hoverDetailsContainer = card.querySelector('.hover-card-details');
+
+            const releaseYear = (data.release_date || data.first_air_date || '').substring(0, 4);
+            const runtime = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : null);
+            const formattedRuntime = runtime ? `${Math.floor(runtime / 60)}h ${runtime % 60}m` : '';
+            const overview = data.overview.length > 150 ? data.overview.substring(0, 150) + '...' : data.overview;
+
+            let rating = 'NR';
+            if (data.content_ratings?.results) {
+                const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                if (usRating) rating = usRating.rating;
+            }
+
+            const genreTags = data.genres.slice(0, 3).map(g => `<span>${g.name}</span>`).join('');
+
+            hoverDetailsContainer.innerHTML = `
+                <div class="hover-card-media" style="background-image: url('${backdropBaseUrl}${data.backdrop_path}')"></div>
+                <div class="hover-card-body">
+                    <div class="hover-action-buttons">
+                        <a href="${playerUrl}" class="action-btn play-btn js-play-trigger" title="Play"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"></path></svg></a>
+                        <button class="action-btn add-list-btn" title="Add to My List" onclick="addToMyList('${itemId}', '${mediaType}', this)"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg></button>
+                        <button class="action-btn like-btn" title="Like"><svg viewBox="0 0 24 24"><path d="M23,10C23,8.89,22.1,8,21,8H14.68L15.64,3.43C15.66,3.33,15.67,3.22,15.67,3.11C15.67,2.7,15.5,2.32,15.23,2.05L14.17,1L7.59,7.59C7.22,7.95,7,8.45,7,9V19A2,2 0 0,0 9,21H18C18.83,21,19.54,20.5,19.84,19.78L22.86,12.73C22.95,12.5,23,12.26,23,12V10M1,21H5V9H1V21Z"></path></svg></button>
+                        <button class="action-btn more-info-btn" title="More Info" data-id="${itemId}" data-type="${mediaType}"><svg viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"></path></svg></button>
+                    </div>
+                    <p class="hover-card-overview">${overview}</p>
+                    <div class="hover-card-meta">
+                        <span class="meta-rating">${rating}</span>
+                        <span class="meta-year">${releaseYear}</span>
+                        <span class="meta-runtime">${formattedRuntime}</span>
+                    </div>
+                    <div class="hover-card-genres">${genreTags}</div>
+                </div>
+            `;
+        }
+
+        // --- API & PAGE INITIALIZATION ---
+        const initializePage = async () => {
+            document.getElementById('hero-container').innerHTML = '<div class="loader"></div>';
+            setupHeroSection();
+            let countryDetails = { region: 'US', countryName: 'the U.S.' };
+            try {
+                const geoResponse = await fetch('https://ipapi.co/json/');
+                const geoData = await geoResponse.json();
+                if (geoData && geoData.country_code) {
+                    countryDetails = { region: geoData.country_code, countryName: geoData.country_name };
+                }
+            } catch (error) { console.warn('Could not fetch user location, defaulting to US.', error); }
+
+            getTrendingContent('movie', 'trending-movies', 'movies-heading', countryDetails);
+            getTrendingContent('tv', 'trending-shows', 'tv-heading', countryDetails);
+            createGenreRows();
+        };
+
+        async function fetchData(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (error) { console.error('Error fetching data:', error); return null; }
+        }
+
+        async function getTrendingContent(mediaType, containerId, headingId, countryDetails) {
+            const container = document.getElementById(containerId);
+            const heading = document.getElementById(headingId);
+            heading.textContent = `Top 10 ${mediaType === 'movie' ? 'Movies' : 'TV Shows'} in ${countryDetails.countryName} Today`;
+            const url = `https://api.themoviedb.org/3/trending/${mediaType}/day?api_key=${apiKey}&region=${countryDetails.region}`;
+            const data = await fetchData(url);
+            if (data?.results) displayContentRow(data.results.slice(0, 10), container, mediaType, true);
+        }
+
+
+        async function createGenreRows() {
+            const genreRowsContainer = document.getElementById('genre-rows');
+            const genres = [{ id: 28, name: "Action" }, { id: 35, name: "Comedy" }, { id: 27, name: "Horror" }, { id: 878, name: "Science Fiction" }];
+            for (const genre of genres) {
+                const url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=${genre.id}&sort_by=popularity.desc`;
+                const data = await fetchData(url);
+                if (data?.results) {
+                    const row = document.createElement('div');
+                    row.classList.add('content-row');
+                    row.innerHTML = `<h2>${genre.name} Movies</h2><div class="content-scroll"></div>`;
+                    genreRowsContainer.appendChild(row);
+                    displayContentRow(data.results, row.querySelector('.content-scroll'), 'movie');
+                }
+            }
+        }
+
+        async function setupHeroSection() {
+            const heroContainer = document.getElementById('hero-container');
+            const movieUrl = `https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey}&language=en-US`;
+            const tvUrl = `https://api.themoviedb.org/3/trending/tv/day?api_key=${apiKey}&language=en-US`;
+
+            try {
+                const [movieData, tvData] = await Promise.all([
+                    fetchData(movieUrl),
+                    fetchData(tvUrl)
+                ]);
+
+                // Add media_type to each item and take top 10 from each
+                const movies = (movieData?.results || []).slice(0, 10).map(item => ({ ...item, media_type: 'movie' }));
+                const tvShows = (tvData?.results || []).slice(0, 10).map(item => ({ ...item, media_type: 'tv' }));
+
+                // Combine and filter for valid backdrop images
+                const allTrending = [...movies, ...tvShows].filter(item => item.backdrop_path);
+
+                if (allTrending.length > 0) {
+                    // Randomly select from all trending content
+                    const featuredIndex = Math.floor(Math.random() * allTrending.length);
+                    const featured = allTrending[featuredIndex];
+
+                    // Calculate rank within the specific media type
+                    const mediaType = featured.media_type;
+                    const sameTypeItems = mediaType === 'movie' ? movies : tvShows;
+                    const rankInType = sameTypeItems.findIndex(item => item.id === featured.id) + 1;
+
+                    const playerUrl = `${playerBaseUrl}/${mediaType}/${featured.id}`;
+                    const mediaTypeDisplay = mediaType === 'movie' ? 'Movies' : 'TV Shows';
+
+                    heroContainer.style.backgroundImage = `url(${backdropBaseUrl}${featured.backdrop_path})`;
+                    heroContainer.innerHTML = `
+                        <div class="hero-content">
+                            <h1 class="hero-title">${featured.name || featured.title}</h1>
+                            <div class="hero-rank-badge">
+                                <div class="hero-rank-square">
+                                    <div class="top-text">TOP</div>
+                                    <div class="number-text">10</div>
+                                </div>
+                                <div class="hero-rank-text">#${rankInType} in ${mediaTypeDisplay} Today</div>
+                            </div>
+                            <p class="hero-overview">${featured.overview}</p>
+                            <div class="hero-buttons">
+                                <a href="${playerUrl}" class="btn btn-play js-play-trigger"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z" fill="currentColor"></path></svg>Play</a>
+                                <a href="#" class="btn btn-more-info" data-id="${featured.id}" data-type="${mediaType}">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"/>
+                                    </svg>
+                                    More info
+                                </a>
+                            </div>
+                        </div>`;
+                } else {
+                    heroContainer.innerHTML = "<p>Could not load featured content.</p>";
+                }
+            } catch (error) {
+                heroContainer.innerHTML = "<p>Could not load featured content.</p>";
+                console.error("Error setting up hero section:", error);
+            }
+        }
+
+        // --- PLAYER MODAL LOGIC ---
+        function openPlayerModal(url) {
+            const playerModal = document.getElementById('player-modal');
+            const playerContainer = document.getElementById('player-container');
+            if (playerContainer && playerModal) {
+                playerContainer.innerHTML = `<iframe src="${url}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                playerModal.classList.add('active');
+                document.body.classList.add('modal-open');
+            }
+        }
+
+        function closePlayerModal() {
+            const playerModal = document.getElementById('player-modal');
+            const playerContainer = document.getElementById('player-container');
+            if (playerContainer && playerModal) {
+                playerModal.classList.remove('active');
+                playerContainer.innerHTML = '';
+                document.body.classList.remove('modal-open');
+            }
+        }
+
+        // --- INFO MODAL LOGIC ---
+        async function openInfoModal(mediaType, itemId) {
+            document.body.classList.add('modal-open');
+            const infoModal = document.getElementById('info-modal');
+            infoModal.classList.add('active');
+            infoModal.innerHTML = `<div class="modal-backdrop"></div><div style="position:relative; z-index:1;"><div class="loader"></div></div>`;
+
+            const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}&append_to_response=videos,content_ratings,credits`;
+            const data = await fetchData(url);
+
+            if (!data) {
+                infoModal.innerHTML = '<p>Could not load details.</p>';
+                return;
+            }
+
+            const title = data.name || data.title;
+            const releaseYear = (data.first_air_date || data.release_date || '').substring(0, 4);
+            const seasons = data.number_of_seasons ? `${data.number_of_seasons} Seasons` : '';
+            const overview = data.overview;
+            const cast = data.credits?.cast.slice(0, 3).map(c => c.name).join(', ') + ', more';
+            const genres = data.genres.map(g => g.name).join(', ');
+            const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
+
+            let rating = '';
+            if (data.content_ratings?.results) {
+                const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                if (usRating?.rating) rating = `<span class="metadata-badge">${usRating.rating}</span>`;
+            }
+
+            const officialTrailer = data.videos?.results.find(v => v.site === 'YouTube' && v.type === 'Trailer');
+            const mediaContent = officialTrailer
+                ? `<iframe src="https://www.youtube.com/embed/${officialTrailer.key}?autoplay=1&mute=0&controls=0&loop=1&playlist=${officialTrailer.key}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`
+                : '';
+
+            const backgroundStyle = !officialTrailer ? `style="background-image: url('${backdropBaseUrl}${data.backdrop_path}')"` : '';
+
+            const playIcon = `<svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z" fill="currentColor"></path></svg>`;
+            const addIcon = `<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>`;
+            const likeIcon = `<svg viewBox="0 0 24 24"><path d="M23,10C23,8.89,22.1,8,21,8H14.68L15.64,3.43C15.66,3.33,15.67,3.22,15.67,3.11C15.67,2.7,15.5,2.32,15.23,2.05L14.17,1L7.59,7.59C7.22,7.95,7,8.45,7,9V19A2,2 0 0,0 9,21H18C18.83,21,19.54,20.5,19.84,19.78L22.86,12.73C22.95,12.5,23,12.26,23,12V10M1,21H5V9H1V21Z"></path></svg>`;
+
+            infoModal.innerHTML = `
+                <div class="modal-backdrop"></div>
+                <div class="modal-content-wrapper">
+                    <button class="modal-close-btn">&times;</button>
+                    
+                    <div class="modal-media-container" ${backgroundStyle}>
+                        ${mediaContent}
+                        <div class="modal-content-overlay">
+                            <h2 class="modal-title">${title}</h2>
+                            <div class="modal-action-buttons">
+                                <a href="${playerUrl}" class="modal-play-btn js-play-trigger">${playIcon} Play</a>
+                                <button class="modal-icon-btn" title="Add to My List" onclick="addToMyList('${itemId}', '${mediaType}', this)">${addIcon}</button>
+                                <button class="modal-icon-btn" title="Like">${likeIcon}</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="modal-metadata-row">
+                            ${releaseYear ? `<span>${releaseYear}</span>` : ''}
+                            ${seasons ? `<span>${seasons}</span>` : ''}
+                            ${rating}
+                            <span class="metadata-badge">HD</span>
+                        </div>
+                        <div class="modal-main-content-grid">
+                            <div class="modal-description">
+                                <p>${overview}</p>
+                            </div>
+                            <aside class="modal-meta-data">
+                                <p><span class="label">Cast:</span> <span class="value">${cast}</span></p>
+                                <p><span class="label">Genres:</span> <span class="value">${genres}</span></p>
+                            </aside>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function closeInfoModal() {
+            document.body.classList.remove('modal-open');
+            const infoModal = document.getElementById('info-modal');
+            infoModal.classList.remove('active');
+            infoModal.innerHTML = '';
+        }
+
+        // --- SEARCH LOGIC ---
+        const searchIconTrigger = document.getElementById('search-icon-trigger');
+        const headerSearchInput = document.getElementById('header-search-input');
+        const closeSearchIcon = document.getElementById('close-search-icon');
+        const searchResultsSection = document.getElementById('search-results-section');
+        const searchResultsGrid = document.getElementById('search-results');
+        const searchFeedback = document.getElementById('search-feedback');
+        const heroContainer = document.getElementById('hero-container');
+        const mainContent = document.getElementById('main-content');
+        let searchTimeout;
+
+        function toggleSearch() {
+            document.body.classList.toggle('search-active');
+            if (document.body.classList.contains('search-active')) {
+                setTimeout(() => {
+                    headerSearchInput.focus();
+                }, 100);
+            } else {
+                headerSearchInput.value = '';
+                searchResultsSection.style.display = 'none';
+                searchResultsGrid.innerHTML = '';
+                if (searchFeedback) searchFeedback.innerHTML = '';
+                heroContainer.style.display = 'flex';
+                mainContent.style.display = 'block';
+            }
+        }
+
+        async function performSearch(query) {
+            const url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}`;
+            const data = await fetchData(url);
+            if (data) displaySearchResults(data.results, query);
+        }
+
+        function displaySearchResults(results, query) {
+            searchResultsGrid.innerHTML = '';
+            searchFeedback.innerHTML = '';
+
+            const validResults = results.filter(item => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path);
+
+            if (validResults.length === 0) {
+                searchFeedback.textContent = `Your search for "${query}" did not have any matches.`;
+                searchResultsSection.style.display = 'block';
+                heroContainer.style.display = 'flex';
+                mainContent.style.display = 'block';
+                return;
+            }
+
+            heroContainer.style.display = 'none';
+            mainContent.style.display = 'none';
+            searchResultsSection.style.display = 'block';
+
+            validResults.forEach(item => {
+                const card = createPosterCard(item, item.media_type);
+                if (card) searchResultsGrid.appendChild(card);
+            });
+        }
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', initializePage);
+
+        document.addEventListener('mouseenter', (event) => {
+            const card = event.target.closest('.poster-card');
+            if (card) fetchAndPopulateHoverCard(card);
+        }, true);
+
+        document.addEventListener('click', function (event) {
+            const moreInfoButton = event.target.closest('.more-info-btn, .btn-more-info');
+            const playButton = event.target.closest('.js-play-trigger');
+
+            // Handle Play Button click
+            if (playButton) {
+                event.preventDefault();
+                const playerUrl = playButton.getAttribute('href');
+                if (playerUrl) {
+                    closeInfoModal();
+                    openPlayerModal(playerUrl);
+                }
+            }
+
+            // Handle More Info Button click
+            if (moreInfoButton) {
+                event.preventDefault();
+                const { id, type } = moreInfoButton.dataset;
+                if (id && type) openInfoModal(type, id);
+            }
+
+            // Handle Info Modal close
+            if (event.target.closest('.modal-close-btn') || event.target.matches('.modal-backdrop')) {
+                closeInfoModal();
+            }
+
+            // Handle Player Modal close
+            if (event.target.closest('#close-player-btn')) {
+                closePlayerModal();
+            }
+        });
+
+        searchIconTrigger.addEventListener('click', toggleSearch);
+        closeSearchIcon.addEventListener('click', toggleSearch);
+
+        headerSearchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = headerSearchInput.value.trim();
+                if (query) {
+                    searchResultsSection.style.display = 'block';
+                    searchResultsGrid.innerHTML = '<div class="loader"></div>';
+                    performSearch(query);
+                } else {
+                    searchResultsGrid.innerHTML = '';
+                    searchFeedback.innerHTML = '';
+                    searchResultsSection.style.display = 'none';
+                    heroContainer.style.display = 'flex';
+                    mainContent.style.display = 'block';
+                }
+            }, 500);
+        });
+
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // --- MY NETFLIX FUNCTIONALITY ---
+        const STORAGE_KEYS = {
+            MY_LIST: 'netflix_my_list',
+            CONTINUE_WATCHING: 'netflix_continue_watching',
+            WATCH_HISTORY: 'netflix_watch_history',
+            REMINDERS: 'netflix_reminders'
+        };
+
+        function getStorageData(key) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : [];
+            } catch (error) {
+                console.error('Error reading from localStorage:', error);
+                return [];
+            }
+        }
+
+        function setStorageData(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (error) {
+                console.error('Error writing to localStorage:', error);
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        async function addToMyList(itemId, mediaType, buttonElement) {
+            try {
+                // Fetch item details from API
+                const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}`;
+                const data = await fetchData(url);
+
+                if (!data) {
+                    showToast('Error adding to My List');
+                    return;
+                }
+
+                // Get current list
+                let myList = getStorageData(STORAGE_KEYS.MY_LIST);
+
+                // Check if item already exists
+                const exists = myList.some(item =>
+                    item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType
+                );
+
+                if (exists) {
+                    showToast('Already in My List');
+                    return;
+                }
+
+                // Add media_type to the data
+                data.media_type = mediaType;
+
+                // Add to list
+                myList.unshift(data); // Add to beginning of array
+                setStorageData(STORAGE_KEYS.MY_LIST, myList);
+
+                // Update button appearance
+                buttonElement.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+                buttonElement.title = 'Added to My List';
+                buttonElement.style.borderColor = 'var(--netflix-red)';
+                buttonElement.style.backgroundColor = 'var(--netflix-red)';
+
+                showToast(`Added "${data.title || data.name}" to My List`);
+
+                // Also add to continue watching with random progress
+                let continueWatching = getStorageData(STORAGE_KEYS.CONTINUE_WATCHING);
+                if (!continueWatching.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType)) {
+                    data.progress = Math.floor(Math.random() * 60) + 10; // Random progress between 10-70%
+                    continueWatching.unshift(data);
+                    if (continueWatching.length > 10) continueWatching = continueWatching.slice(0, 10); // Keep only 10 items
+                    setStorageData(STORAGE_KEYS.CONTINUE_WATCHING, continueWatching);
+                }
+
+            } catch (error) {
+                console.error('Error adding to My List:', error);
+                showToast('Error adding to My List');
+            }
+        }
+
+        // Add to watch history when playing content
+        function addToWatchHistory(itemData) {
+            let watchHistory = getStorageData(STORAGE_KEYS.WATCH_HISTORY);
+
+            // Remove if already exists to avoid duplicates
+            watchHistory = watchHistory.filter(item =>
+                !(item.id == itemData.id && (item.media_type || (item.title ? 'movie' : 'tv')) === (itemData.media_type || (itemData.title ? 'movie' : 'tv')))
+            );
+
+            // Add to beginning
+            watchHistory.unshift(itemData);
+
+            // Keep only last 20 items
+            if (watchHistory.length > 20) {
+                watchHistory = watchHistory.slice(0, 20);
+            }
+
+            setStorageData(STORAGE_KEYS.WATCH_HISTORY, watchHistory);
+        }
+
+        // Override the existing play functionality to add to watch history
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.js-play-trigger')) {
+                e.preventDefault();
+                const playButton = e.target.closest('.js-play-trigger');
+                const card = playButton.closest('.poster-card, .hero-content');
+
+                if (card) {
+                    const itemId = card.dataset?.id || playButton.dataset?.id;
+                    const mediaType = card.dataset?.type || playButton.dataset?.type;
+
+                    if (itemId && mediaType) {
+                        // Fetch and add to watch history
+                        fetchData(`https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}`)
+                            .then(data => {
+                                if (data) {
+                                    data.media_type = mediaType;
+                                    addToWatchHistory(data);
+                                }
+                            });
+                    }
+                }
+
+            }
+        });
+
+    </script>
+</body>
+
+</html>
