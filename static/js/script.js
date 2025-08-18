@@ -1,3 +1,4 @@
+
 const apiKey = 'f2d7ae9dee829174c475e32fe8f993dc';
 const posterBaseUrl = 'https://image.tmdb.org/t/p/w500';
 const backdropBaseUrl = 'https://image.tmdb.org/t/p/original';
@@ -655,7 +656,7 @@ function displayMobileSearchResults(results, title) {
         const playerUrl = `${playerBaseUrl}/${mediaType}/${item.id}`;
         
         return `
-            <div class="mobile-result-item">
+            <div class="mobile-result-item" data-id="${item.id}" data-type="${mediaType}">
                 <img src="${backdropBaseUrl}${item.backdrop_path}" alt="${title}" class="mobile-result-thumbnail">
                 <div class="mobile-result-info">
                     <div class="mobile-result-title">${title}</div>
@@ -692,6 +693,7 @@ document.addEventListener('click', function (event) {
     const moreInfoButton = event.target.closest('.more-info-btn, .btn-more-info, .hero-frame-mobile');
     const playButton = event.target.closest('.js-play-trigger');
     const posterCard = event.target.closest('.poster-card');
+    const mobileResultItem = event.target.closest('.mobile-result-item');
 
     if (event.target.closest('.btn-mylist-mobile')) {
         return;
@@ -708,6 +710,14 @@ document.addEventListener('click', function (event) {
         event.preventDefault();
         const { id, type } = moreInfoButton.dataset;
         if (id && type) openInfoModal(type, id);
+    }
+    if (mobileResultItem && !event.target.closest('.js-play-trigger')) {
+        event.preventDefault();
+        const { id, type } = mobileResultItem.dataset;
+        if (id && type) {
+            document.getElementById('mobile-search-popup').classList.remove('active');
+            openInfoModal(type, id);
+        }
     }
     if (posterCard && window.innerWidth <= 480) {
         event.preventDefault();
