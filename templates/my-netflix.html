@@ -909,7 +909,68 @@
                     const card = createPosterCard(item, item.media_type);
                     if (card) grid.appendChild(card);
                 });
+            } else {
+                // Show empty state message
+                const emptyMessage = createEmptyStateMessage(gridId);
+                grid.appendChild(emptyMessage);
             }
+        }
+
+        function createEmptyStateMessage(gridId) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.style.cssText = `
+                grid-column: 1 / -1;
+                text-align: center;
+                padding: 60px 20px;
+                color: var(--text-secondary-color);
+            `;
+
+            let message = '';
+            let actionText = '';
+
+            switch (gridId) {
+                case 'my-list-grid':
+                    message = 'Your list is empty';
+                    actionText = 'Add movies and TV shows to My List while browsing to see them here.';
+                    break;
+                case 'liked-grid':
+                    message = 'You haven\'t liked anything yet';
+                    actionText = 'Like movies and TV shows while browsing to see them here.';
+                    break;
+                case 'trailers-watched-grid':
+                    message = 'No trailers watched yet';
+                    actionText = 'Watch trailers and browse content to see your history here.';
+                    break;
+                default:
+                    message = 'No content found';
+                    actionText = 'Start browsing to discover content.';
+            }
+
+            emptyDiv.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <svg viewBox="0 0 24 24" style="width: 64px; height: 64px; fill: var(--text-muted-color);">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                    </svg>
+                </div>
+                <h3 style="font-size: 1.5rem; margin: 0 0 15px 0; color: var(--text-color);">${message}</h3>
+                <p style="font-size: 1rem; line-height: 1.5; margin: 0; max-width: 400px; margin: 0 auto;">${actionText}</p>
+                <div style="margin-top: 25px;">
+                    <a href="/browse" style="
+                        display: inline-block;
+                        background-color: var(--netflix-red);
+                        color: white;
+                        padding: 12px 24px;
+                        text-decoration: none;
+                        border-radius: 4px;
+                        font-weight: 500;
+                        transition: background-color 0.2s ease;
+                    " onmouseover="this.style.backgroundColor='#f40612'" onmouseout="this.style.backgroundColor='var(--netflix-red)'">
+                        Start Browsing
+                    </a>
+                </div>
+            `;
+
+            return emptyDiv;
         }
 
         function displayMyList() {
