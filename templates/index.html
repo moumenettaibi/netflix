@@ -31,7 +31,7 @@
     <style>
         :root {
             --netflix-red: #e50914;
-            --background-color: #141414;
+            --background-color: #000000;
             --card-color: #181818;
             --text-color: #fff;
             --text-secondary-color: #b3b3b3;
@@ -383,7 +383,7 @@
         .rank-number {
             font-size: 28rem;
             font-weight: 700;
-            color: black;
+            color: #181818;
             -webkit-text-stroke: 5px #cbcbcb;
             text-stroke: 1px #aaa;
             line-height: 0.8;
@@ -610,7 +610,7 @@
             position: relative;
             width: 90%;
             max-width: 850px;
-            background-color: var(--background-color);
+            background-color: var(--card-color);
             border-radius: 8px;
             box-shadow: 0px 3px 15px rgba(0, 0, 0, 0.5);
             overflow: hidden;
@@ -1203,16 +1203,29 @@
             }
 
             .mobile-play-btn {
-                background: none;
-                border: none;
+                background-color: transparent;
+                border: 2px solid rgba(255, 255, 255, 0.7);
+                border-radius: 50%;
+                width: 44px;
+                height: 44px;
                 cursor: pointer;
-                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                transition: all 0.2s ease;
+            }
+
+            .mobile-play-btn:hover {
+                background-color: rgba(255, 255, 255, 0.2);
+                border-color: white;
             }
 
             .mobile-play-btn svg {
-                width: 28px;
-                height: 28px;
+                width: 24px;
+                height: 24px;
                 fill: #FFFFFF;
+                margin-left: 3px;
             }
 
             header {
@@ -1733,7 +1746,12 @@
                 const allTrending = allTrendingRaw.filter(item => item.backdrop_path && item.poster_path);
 
                 if (allTrending.length > 0) {
-                    const featured = allTrending[Math.floor(Math.random() * allTrending.length)];
+                    for (let i = allTrending.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [allTrending[i], allTrending[j]] = [allTrending[j], allTrending[i]];
+                    }
+                    const top10Trending = allTrending.slice(0, 10);
+                    let featured = top10Trending[Math.floor(Math.random() * top10Trending.length)];
                     const featuredMediaType = featured.media_type || (featured.title ? 'movie' : 'tv');
                     const playerUrl = `${playerBaseUrl}/${featuredMediaType}/${featured.id}`;
 
@@ -1763,9 +1781,12 @@
                             </div>
                         </div>`;
                     } else {
-                         const rankUrl = `https://api.themoviedb.org/3/trending/${featuredMediaType}/day?api_key=${apiKey}&language=en-US`;
-                         const rankData = await fetchData(rankUrl);
-                         const rankInType = (rankData?.results.findIndex(item => item.id === featured.id) || 0) + 1;
+                         let rankInType;
+                         if (featuredMediaType === 'movie') {
+                            rankInType = (movieData?.results.findIndex(item => item.id === featured.id) || 0) + 1;
+                         } else {
+                            rankInType = (tvData?.results.findIndex(item => item.id === featured.id) || 0) + 1;
+                         }
                          const mediaTypeDisplay = featuredMediaType === 'movie' ? 'Movies' : 'TV Shows';
                          heroContainer.style.backgroundImage = `url(${backdropBaseUrl}${featured.backdrop_path})`;
                          heroContainer.innerHTML = `
@@ -2108,7 +2129,7 @@
                 ]);
 
                 const allTrending = (movieData?.results || []).concat(tvData?.results || []);
-                const recommendations = allTrending.slice(0, 8).filter(item => item.poster_path);
+                const recommendations = allTrending.slice(0, 8).filter(item => item.backdrop_path);
 
                 displayMobileSearchResults(recommendations, 'Recommended TV Shows & Movies');
             } catch (error) {
@@ -2127,7 +2148,7 @@
                 
                 if (data?.results) {
                     const validResults = data.results.filter(item => 
-                        (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path
+                        (item.media_type === 'movie' || item.media_type === 'tv') && item.backdrop_path
                     );
                     displayMobileSearchResults(validResults, `Search results for "${query}"`);
                 } else {
@@ -2157,7 +2178,7 @@
                 
                 return `
                     <div class="mobile-result-item">
-                        <img src="${posterBaseUrl}${item.poster_path}" alt="${title}" class="mobile-result-thumbnail">
+                        <img src="${backdropBaseUrl}${item.backdrop_path}" alt="${title}" class="mobile-result-thumbnail">
                         <div class="mobile-result-info">
                             <div class="mobile-result-title">${title}</div>
                             <div class="mobile-result-meta">${mediaType === 'movie' ? 'Movie' : 'TV Show'}</div>
