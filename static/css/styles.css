@@ -1107,13 +1107,6 @@
                 fill: #9E9E9E;
             }
 
-            .mobile-mic-icon {
-                width: 20px;
-                height: 20px;
-                fill: #FFFFFF;
-                cursor: pointer;
-            }
-
             .mobile-search-results {
                 flex: 1;
                 overflow-y: auto;
