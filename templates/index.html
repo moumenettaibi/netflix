@@ -1739,20 +1739,20 @@
 
             try {
                 const isMobile = window.innerWidth <= 480;
-                const movieUrl = `https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey}&language=en-US`;
-                const tvUrl = `https://api.themoviedb.org/3/trending/tv/day?api_key=${apiKey}&language=en-US`;
-                const [movieData, tvData] = await Promise.all([fetchData(movieUrl), fetchData(tvUrl)]);
-                const allTrendingRaw = (movieData?.results || []).concat(tvData?.results || []);
-                const allTrending = allTrendingRaw.filter(item => item.backdrop_path && item.poster_path);
+                let trendingUrl;
+                if (mediaType === 'all') {
+                    trendingUrl = `https://api.themoviedb.org/3/trending/all/day?api_key=${apiKey}&language=en-US`;
+                } else {
+                    trendingUrl = `https://api.themoviedb.org/3/trending/${mediaType}/day?api_key=${apiKey}&language=en-US`;
+                }
+
+                const trendingData = await fetchData(trendingUrl);
+                const allTrending = (trendingData?.results || []).filter(item => item.backdrop_path && item.poster_path);
 
                 if (allTrending.length > 0) {
-                    for (let i = allTrending.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [allTrending[i], allTrending[j]] = [allTrending[j], allTrending[i]];
-                    }
                     const top10Trending = allTrending.slice(0, 10);
-                    let featured = top10Trending[Math.floor(Math.random() * top10Trending.length)];
-                    const featuredMediaType = featured.media_type || (featured.title ? 'movie' : 'tv');
+                    const featured = top10Trending[Math.floor(Math.random() * top10Trending.length)];
+                    const featuredMediaType = mediaType === 'all' ? (featured.media_type || (featured.title ? 'movie' : 'tv')) : mediaType;
                     const playerUrl = `${playerBaseUrl}/${featuredMediaType}/${featured.id}`;
 
                     if (isMobile) {
@@ -1781,12 +1781,7 @@
                             </div>
                         </div>`;
                     } else {
-                         let rankInType;
-                         if (featuredMediaType === 'movie') {
-                            rankInType = (movieData?.results.findIndex(item => item.id === featured.id) || 0) + 1;
-                         } else {
-                            rankInType = (tvData?.results.findIndex(item => item.id === featured.id) || 0) + 1;
-                         }
+                         const rankInType = (trendingData?.results.findIndex(item => item.id === featured.id) || 0) + 1;
                          const mediaTypeDisplay = featuredMediaType === 'movie' ? 'Movies' : 'TV Shows';
                          heroContainer.style.backgroundImage = `url(${backdropBaseUrl}${featured.backdrop_path})`;
                          heroContainer.innerHTML = `
