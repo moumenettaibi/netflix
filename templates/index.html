@@ -1137,32 +1137,29 @@
                 cursor: pointer;
             }
 
-            /* Add this inside your @media (max-width: 480px) block */
+            .mobile-search-results {
+                flex: 1;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                /* The 'gap' property was removed from here to be placed on the list itself */
+            }
 
-                .mobile-search-results {
-                    flex: 1;
-                    overflow-y: auto;
-                    display: flex;
-                    flex-direction: column;
-                    /* The 'gap' property was removed from here to be placed on the list itself */
-                }
+            /* This is the new rule that adds the spacing */
+            #mobile-search-results-list {
+                display: flex;
+                flex-direction: column;
+                gap: 16px; /* <--- Adjust this value for more or less space */
+                padding-bottom: 16px;
+            }
 
-                /* This is the new rule that adds the spacing */
-                #mobile-search-results-list {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px; /* <--- Adjust this value for more or less space */
-                    padding-bottom: 16px;
-                }
-
-                .mobile-result-item {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    cursor: pointer;
-                    padding: 0 16px;
-                    gap: 16px;
-                }
+            .mobile-result-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                cursor: pointer;
+                padding: 0 16px;
+                gap: 16px;
             }
 
             .mobile-search-title {
