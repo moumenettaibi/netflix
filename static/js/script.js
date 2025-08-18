@@ -87,17 +87,7 @@ async function fetchAndPopulateHoverCard(card) {
 
 const initializePage = async () => {
     setupHeroSection();
-    let countryDetails = { region: 'US', countryName: 'the U.S.' };
-    try {
-        const geoResponse = await fetch('https://ipapi.co/json/');
-        const geoData = await geoResponse.json();
-        if (geoData && geoData.country_code) {
-            countryDetails = { region: geoData.country_code, countryName: geoData.country_name };
-        }
-    } catch (error) { console.warn('Could not fetch user location, defaulting to US.', error); }
-    getTrendingContent('movie', 'trending-movies', 'movies-heading', countryDetails);
-    getTrendingContent('tv', 'trending-shows', 'tv-heading', countryDetails);
-    createCategoryRows();
+    createAndDisplayShuffledRows(); // New all-in-one function for content rows
 };
 
 async function fetchData(url) {
@@ -106,15 +96,6 @@ async function fetchData(url) {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         return await response.json();
     } catch (error) { console.error('Error fetching data:', error); return null; }
-}
-
-async function getTrendingContent(mediaType, containerId, headingId, countryDetails) {
-    const container = document.getElementById(containerId);
-    const heading = document.getElementById(headingId);
-    heading.textContent = `Top 10 ${mediaType === 'movie' ? 'Movies' : 'TV Shows'} in ${countryDetails.countryName} Today`;
-    const url = `https://api.themoviedb.org/3/trending/${mediaType}/day?api_key=${apiKey}&region=${countryDetails.region}`;
-    const data = await fetchData(url);
-    if (data?.results) displayContentRow(data.results.slice(0, 10), container, mediaType, true);
 }
 
 const customCategories = [
@@ -129,7 +110,7 @@ const customCategories = [
     { name: "Thrillers with a Side of Action", type: 'movie', params: 'with_genres=53,28&sort_by=popularity.desc' },
     { name: "Hollywood Action Movies", type: 'movie', params: 'with_origin_country=US&with_genres=28&sort_by=popularity.desc' },
     { name: "Blockbuster Exciting Movies", type: 'movie', params: 'sort_by=revenue.desc' },
-    { name: "Crowd Pleasers", type: 'movie', params: 'sort_by=vote_average.desc&vote_count.gte=5000' },
+    { name: "Crowd Pleasers Movies", type: 'movie', params: 'sort_by=vote_average.desc&vote_count.gte=5000' },
     // TV Shows
     { name: "Action & Adventure", type: 'tv', params: 'with_genres=10759&sort_by=popularity.desc' },
     { name: "Comedy", type: 'tv', params: 'with_genres=35&sort_by=popularity.desc' },
@@ -137,39 +118,110 @@ const customCategories = [
     { name: "Sci-Fi & Fantasy", type: 'tv', params: 'with_genres=10765&sort_by=popularity.desc' },
     { name: "Emmy-Winning TV Shows", type: 'tv', params: 'with_keywords=1846&sort_by=popularity.desc' },
     { name: "Award-Winning TV Shows", type: 'tv', params: 'with_keywords=155798&sort_by=popularity.desc' },
-    { name: "Watch In One Weekend", type: 'tv', params: 'with_number_of_episodes.lte=10&sort_by=popularity.desc' },
-    { name: "Violent TV Dramas", type: 'tv', params: 'with_genres=18&with_keywords=1495&sort_by=popularity.desc' }
+    { name: "Crowd Pleasers Tv Shows", type: 'tv', params: 'sort_by=vote_average.desc&vote_count.gte=2000' } // Newly added category
 ];
 
-async function createCategoryRows() {
-    const movieRowsContainer = document.getElementById('genre-rows');
-    const tvRowsContainer = document.getElementById('tv-genre-rows');
-    movieRowsContainer.innerHTML = '';
-    tvRowsContainer.innerHTML = '';
+// Helper function to shuffle an array (Fisher-Yates algorithm)
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
 
-    for (const category of customCategories) {
-        const url = `https://api.themoviedb.org/3/discover/${category.type}?api_key=${apiKey}&${category.params}`;
-        const data = await fetchData(url);
-        if (data?.results && data.results.length > 0) {
-            const row = document.createElement('div');
-            row.classList.add('content-row');
-            row.dataset.contentType = category.type;
-            
+async function createAndDisplayShuffledRows() {
+    const mainContainer = document.getElementById('shuffled-rows-container');
+    mainContainer.innerHTML = '<div class="loader"></div>';
+
+    // Fetch user's location to get relevant trending data
+    let countryDetails = { region: 'US', countryName: 'the U.S.' };
+    try {
+        const geoResponse = await fetch('https://ipapi.co/json/');
+        const geoData = await geoResponse.json();
+        if (geoData && geoData.country_code) {
+            countryDetails = { region: geoData.country_code, countryName: geoData.country_name };
+        }
+    } catch (error) { console.warn('Could not fetch user location, defaulting to US.', error); }
+
+    // 1. Define all rows to be displayed, including trending and custom categories
+    const allRowDefinitions = [
+        // Trending Rows
+        { 
+            name: `Top 10 Movies in ${countryDetails.countryName} Today`, 
+            type: 'movie',
+            isRanked: true, 
+            url: `https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey}&region=${countryDetails.region}` 
+        },
+        { 
+            name: `Top 10 TV Shows in ${countryDetails.countryName} Today`, 
+            type: 'tv', 
+            isRanked: true,
+            url: `https://api.themoviedb.org/3/trending/tv/day?api_key=${apiKey}&region=${countryDetails.region}` 
+        },
+        // Custom Category Rows
+        ...customCategories.map(category => {
             let title = category.name;
             if (!title.includes('Movies') && !title.includes('Shows') && !title.includes('Dramas') && !title.includes('Pleasers') && !title.includes('Weekend')) {
                  title = `${category.name} ${category.type === 'movie' ? 'Movies' : 'TV Shows'}`;
             }
-            
-            row.innerHTML = `<h2>${title}</h2><div class="content-scroll"></div>`;
-
-            if (category.type === 'movie') {
-                movieRowsContainer.appendChild(row);
-            } else {
-                tvRowsContainer.appendChild(row);
+            return {
+                name: title,
+                type: category.type,
+                isRanked: false,
+                url: `https://api.themoviedb.org/3/discover/${category.type}?api_key=${apiKey}&${category.params}`
             }
-            displayContentRow(data.results, row.querySelector('.content-scroll'), category.type);
+        })
+    ];
+
+    // 2. Fetch data for all rows concurrently
+    const rowDataPromises = allRowDefinitions.map(def => fetchData(def.url));
+    const allResults = await Promise.all(rowDataPromises);
+
+    // 3. Prepare a list of renderable rows (filter out failed fetches or empty results)
+    let renderableRows = [];
+    allResults.forEach((data, index) => {
+        if (data?.results && data.results.length > 0) {
+            renderableRows.push({
+                title: allRowDefinitions[index].name,
+                type: allRowDefinitions[index].type,
+                isRanked: allRowDefinitions[index].isRanked,
+                items: allRowDefinitions[index].isRanked ? data.results.slice(0, 10) : data.results
+            });
+        }
+    });
+
+    // 4. Shuffle the list of categories
+    shuffleArray(renderableRows);
+
+    // 5. Enforce the "no more than two of the same type in a row" rule for a better mix
+    for (let i = 2; i < renderableRows.length; i++) {
+        if (renderableRows[i].type === renderableRows[i-1].type && renderableRows[i].type === renderableRows[i-2].type) {
+            let swapIndex = -1;
+            for (let j = i + 1; j < renderableRows.length; j++) {
+                if (renderableRows[j].type !== renderableRows[i].type) {
+                    swapIndex = j;
+                    break;
+                }
+            }
+            if (swapIndex !== -1) {
+                [renderableRows[i], renderableRows[swapIndex]] = [renderableRows[swapIndex], renderableRows[i]];
+            }
         }
     }
+
+    // 6. Render the final shuffled and adjusted list of rows
+    mainContainer.innerHTML = ''; // Clear loader
+    renderableRows.forEach(rowData => {
+        const row = document.createElement('div');
+        row.classList.add('content-row');
+        row.dataset.contentType = rowData.type; // Set for filtering logic
+        
+        row.innerHTML = `<h2>${rowData.title}</h2><div class="content-scroll"></div>`;
+        mainContainer.appendChild(row);
+
+        const contentScrollContainer = row.querySelector('.content-scroll');
+        displayContentRow(rowData.items, contentScrollContainer, rowData.type, rowData.isRanked);
+    });
 }
 
 async function setupHeroSection(mediaType = 'all') {
@@ -425,7 +477,8 @@ document.addEventListener('DOMContentLoaded', initializePage);
 
 // --- CONTENT FILTERING LOGIC ---
 function filterContent(filter) {
-    const allContent = document.querySelectorAll('[data-content-type]');
+    // This now correctly filters the dynamically generated rows
+    const allContent = document.querySelectorAll('#shuffled-rows-container .content-row');
     allContent.forEach(section => {
         if (filter === 'all' || section.dataset.contentType === filter) {
             section.style.display = 'block';
@@ -442,9 +495,7 @@ function setupMobileFiltering() {
         button.addEventListener('click', function() {
             const buttonText = this.textContent.trim();
             
-            // Remove active class from all buttons
             mobileFilterButtons.forEach(btn => btn.classList.remove('active'));
-            // Add active class to clicked button
             this.classList.add('active');
             
             if (buttonText === 'TV Shows') {
@@ -455,7 +506,6 @@ function setupMobileFiltering() {
                 setupHeroSection('movie');
             } else if (buttonText.includes('Categories')) {
                 // Categories functionality will be implemented later
-                // For now, do nothing when clicked
             }
         });
     });
@@ -468,7 +518,6 @@ function setupNavFiltering() {
         link.addEventListener('click', function (e) {
             e.preventDefault();
 
-            // Close search if it's active
             if (document.body.classList.contains('search-active')) {
                 closeSearch();
             }
@@ -506,7 +555,6 @@ function setupMobileSearch() {
     const mobileSearchInput = document.getElementById('mobile-search-input');
     const mobileSearchResultsList = document.getElementById('mobile-search-results-list');
 
-    // Show mobile search popup when search icon is clicked on mobile
     searchIconTrigger.addEventListener('click', function() {
         if (window.innerWidth <= 480) {
             mobileSearchPopup.classList.add('active');
@@ -516,7 +564,6 @@ function setupMobileSearch() {
         }
     });
 
-    // Close mobile search popup
     mobileSearchBackBtn.addEventListener('click', function() {
         mobileSearchPopup.classList.remove('active');
         document.body.classList.remove('modal-open');
@@ -524,7 +571,6 @@ function setupMobileSearch() {
         mobileSearchResultsList.innerHTML = '';
     });
 
-    // Handle mobile search input
     let mobileSearchTimeout;
     mobileSearchInput.addEventListener('input', function() {
         clearTimeout(mobileSearchTimeout);
@@ -539,7 +585,6 @@ function setupMobileSearch() {
         }, 500);
     });
 
-    // Close popup when clicking outside
     mobileSearchPopup.addEventListener('click', function(e) {
         if (e.target === this) {
             this.classList.remove('active');
@@ -553,7 +598,6 @@ async function loadMobileSearchResults() {
     mobileSearchResultsList.innerHTML = '<div class="loader"></div>';
 
     try {
-        // Load trending content for recommendations
         const movieUrl = `https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey}&language=en-US`;
         const tvUrl = `https://api.themoviedb.org/3/trending/tv/day?api_key=${apiKey}&language=en-US`;
         
@@ -626,14 +670,12 @@ function displayMobileSearchResults(results, title) {
         `;
     }).join('');
 
-    // Add click handlers for play buttons
     mobileSearchResultsList.querySelectorAll('.js-play-trigger').forEach(btn => {
         btn.addEventListener('click', function() {
             const playerUrl = this.dataset.url;
             if (playerUrl) {
                 closeInfoModal();
                 openPlayerModal(playerUrl);
-                // Close mobile search popup
                 document.getElementById('mobile-search-popup').classList.remove('active');
                 document.body.classList.remove('modal-open');
             }
@@ -743,8 +785,7 @@ function updateAllButtons(itemId, mediaType) {
     const isInMyList = myList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
 
     const addListIcon = isInMyList ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>' : '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
-    const likeIcon = '<svg viewBox="0 0 24 24"><path d="M23,10C23,8.89,22.1,8,21,8H14.68L15.64,3.43C15.66,3.33,15.67,3.22,15.67,3.11C15.67,2.7,15.5,2.32,15.23,2.05L14.17,1L7.59,7.59C7.22,7.95,7,8.45,7,9V19A2,2 0 0,0 9,21H18C18.83,21,19.54,20.5,19.84,19.78L22.86,12.73C22.95,12.5,23,12.26,23,12V10M1,21H5V9H1V21Z"></path></svg>';
-
+    
     const likeButtons = document.querySelectorAll(`.like-btn[data-id="${itemId}"][data-type="${mediaType}"]`);
     likeButtons.forEach(button => {
         if (isLiked) {

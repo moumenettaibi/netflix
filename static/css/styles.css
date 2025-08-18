@@ -7,6 +7,11 @@
             --text-secondary-color: #b3b3b3;
             --text-muted-color: #777;
         }
+        *:focus, *:active {
+            outline: none !important;
+            box-shadow: none !important;
+            -webkit-tap-highlight-color: transparent;
+          }
 
         body {
             background-color: var(--background-color);
@@ -15,6 +20,8 @@
             margin: 0;
             padding: 0;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+
         }
 
         body.modal-open {
@@ -1439,4 +1446,4 @@
                 display: none !important;
             }
         }
-    
+        
