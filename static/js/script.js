@@ -265,7 +265,7 @@ async function setupHeroSection(mediaType = 'all') {
                             <a href="${playerUrl}" class="btn-play-mobile js-play-trigger">
                                 <svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"></path></svg>Play
                             </a>
-                            <button class="btn-mylist-mobile" onclick="event.stopPropagation(); addToMyList('${featured.id}', '${featuredMediaType}', this)">
+                            <button class="btn-mylist-mobile" data-id="${featured.id}" data-type="${featuredMediaType}" onclick="event.stopPropagation(); addToMyList('${featured.id}', '${featuredMediaType}')">
                                 ${myListButtonIcon} My List
                             </button>
                         </div>
@@ -795,13 +795,17 @@ function updateAllButtons(itemId, mediaType) {
         }
     });
 
-    const addListButtons = document.querySelectorAll(`.add-list-btn[data-id="${itemId}"][data-type="${mediaType}"]`);
+    const addListButtons = document.querySelectorAll(`.add-list-btn[data-id="${itemId}"][data-type="${mediaType}"], .btn-mylist-mobile[data-id="${itemId}"][data-type="${mediaType}"]`);
     addListButtons.forEach(button => {
         if (isInMyList) {
             button.classList.add('added');
-            button.innerHTML = addListIcon;
         } else {
             button.classList.remove('added');
+        }
+
+        if (button.classList.contains('btn-mylist-mobile')) {
+            button.innerHTML = `${addListIcon} My List`;
+        } else {
             button.innerHTML = addListIcon;
         }
     });
