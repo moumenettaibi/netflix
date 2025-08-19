@@ -772,6 +772,120 @@
             color: var(--text-color);
         }
 
+        /* This styles the individual actor/genre links */
+        .modal-meta-data .value a {
+            color: var(--text-color);
+            text-decoration: none; /* Removes the underline by default */
+        }
+
+        /* This adds the underline ONLY to the specific link you are hovering over */
+        .modal-meta-data .value a:hover {
+            text-decoration: underline;
+        }
+
+        /* --- EPISODES SECTION --- */
+        .episodes-section {
+            margin-top: 32px;
+        }
+
+        .season-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .season-btn {
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .season-btn:hover, .season-btn.active {
+            background-color: var(--netflix-red);
+            border-color: var(--netflix-red);
+        }
+
+        .episodes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .episode-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #222;
+            transition: background-color 0.2s ease;
+        }
+
+        .episode-item:hover {
+            background-color: #333;
+        }
+
+        .episode-item img {
+            width: 150px;
+            height: 84px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .episode-info {
+            flex-grow: 1;
+        }
+
+        .episode-info h4 {
+            margin: 0 0 5px;
+            font-size: 1rem;
+        }
+
+        .episode-info p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary-color);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .episode-play-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            background-color: rgba(42, 42, 42, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .episode-play-btn:hover {
+            border-color: white;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .episode-play-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+
+        .episode-play-btn:hover svg {
+            fill: black;
+        }
+
         /* --- PLAYER MODAL STYLES --- */
         .player-modal {
             position: fixed;
@@ -821,6 +935,21 @@
 
         .close-player-btn:hover svg {
             transform: scale(1.1);
+        }
+
+        #next-episode-btn {
+            position: absolute;
+            bottom: 50px;
+            right: 50px;
+            background-color: var(--netflix-red);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10001;
         }
 
         /* --- TOAST NOTIFICATION STYLES --- */
@@ -1440,3 +1569,42 @@
             }
         }
         
+
+        /* --- Add this to your styles.css file --- */
+
+        .mute-toggle-btn {
+            position: absolute;
+            /* Adjust positioning as needed */
+            bottom: 48px;
+            right: 48px;
+            z-index: 6;
+            /* Ensure it's on top of the overlay but below the close button */
+        }
+
+        @media (max-width: 768px) {
+            .mute-toggle-btn {
+                bottom: 24px;
+                right: 24px;
+                width: 38px;
+                height: 38px;
+            }
+            .mute-toggle-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+        .modal-meta-data .value {
+            color: var(--text-color);
+        }
+        
+        /* This styles the individual actor/genre links inside the 'value' container */
+        .modal-meta-data .value a {
+            color: inherit; /* Inherits the white color from the parent */
+            text-decoration: none;
+        }
+        
+        /* This applies the underline ONLY to the specific link you hover over */
+        .modal-meta-data .value a:hover {
+            text-decoration: underline;
+            cursor: pointer;
+        }
