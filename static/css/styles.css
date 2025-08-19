@@ -811,8 +811,8 @@ main {
 }
 
 .season-btn:hover, .season-btn.active {
-    background-color: var(--netflix-red);
-    border-color: var(--netflix-red);
+    background-color: #333;
+    border-color: #ffffff;
 }
 
 .episodes-list {
