@@ -111,6 +111,8 @@ const customCategories = [
     { name: "Hollywood Action Movies", type: 'movie', params: 'with_origin_country=US&with_genres=28&sort_by=popularity.desc' },
     { name: "Blockbuster Exciting Movies", type: 'movie', params: 'sort_by=revenue.desc' },
     { name: "Crowd Pleasers Movies", type: 'movie', params: 'sort_by=vote_average.desc&vote_count.gte=5000' },
+    { name: "Trending Documentaries", type: 'movie', params: 'with_genres=99&sort_by=popularity.desc&primary_release_year=' + new Date().getFullYear() },
+
     // TV Shows
     { name: "Action & Adventure", type: 'tv', params: 'with_genres=10759&sort_by=popularity.desc' },
     { name: "Comedy", type: 'tv', params: 'with_genres=35&sort_by=popularity.desc' },
