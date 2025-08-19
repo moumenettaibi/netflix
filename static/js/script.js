@@ -336,18 +336,14 @@ function openPlayerModal(url, mediaType, itemId) {
     }
 }
 
-// MODIFICATION: Added logic to resume trailer on player close
 function closePlayerModal() {
     const playerModal = document.getElementById('player-modal');
     const playerContainer = document.getElementById('player-container');
     if (playerContainer && playerModal) {
-        // --- RESUME TRAILER LOGIC START ---
         const infoModal = document.getElementById('info-modal');
-        // Check if the info modal is still open in the background
         if (infoModal.classList.contains('active')) {
             const trailerIframe = infoModal.querySelector('#modal-trailer-video');
             if (trailerIframe) {
-                 // Send play command to YouTube iframe to resume
                  trailerIframe.contentWindow.postMessage(JSON.stringify({
                     event: 'command',
                     func: 'playVideo',
@@ -355,7 +351,6 @@ function closePlayerModal() {
                 }), '*');
             }
         }
-        // --- RESUME TRAILER LOGIC END ---
 
         playerModal.classList.remove('active');
         playerContainer.innerHTML = '';
@@ -369,7 +364,6 @@ async function openInfoModal(mediaType, itemId) {
     infoModal.classList.add('active');
     infoModal.innerHTML = `<div class="modal-backdrop"></div><div style="position:relative; z-index:1;"><div class="loader"></div></div>`;
 
-    // Append seasons for TV shows
     const appendToResponse = 'videos,content_ratings,credits' + (mediaType === 'tv' ? ',season/1' : '');
     const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}&append_to_response=${appendToResponse}`;
 
@@ -411,7 +405,6 @@ async function openInfoModal(mediaType, itemId) {
         episodesHtml += `<div class="episodes-section">`;
         episodesHtml += `<div class="season-selector">`;
         data.seasons.forEach(season => {
-            // Exclude season 0 which is usually specials
             if (season.season_number > 0) {
                 episodesHtml += `<button class="season-btn" data-season-number="${season.season_number}">${season.name}</button>`;
             }
@@ -424,7 +417,9 @@ async function openInfoModal(mediaType, itemId) {
     infoModal.innerHTML = `
         <div class="modal-backdrop"></div>
         <div class="modal-content-wrapper">
-            <button class="modal-close-btn">&times;</button>
+            <button class="modal-back-btn" title="Back">
+                <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path></svg>
+            </button>
             <div class="modal-media-container" ${backgroundStyle}>
                 ${mediaContent}
                 <div class="modal-content-overlay">
@@ -475,14 +470,12 @@ async function openInfoModal(mediaType, itemId) {
             const action = isMuted ? 'unMute' : 'mute';
             const newMutedState = !isMuted;
 
-            // Send command to YouTube iframe
             trailerIframe.contentWindow.postMessage(JSON.stringify({
                 event: 'command',
                 func: action,
                 args: []
             }), '*');
 
-            // Update button state and icon
             muteToggleButton.dataset.muted = newMutedState;
             muteToggleButton.title = newMutedState ? 'Unmute' : 'Mute';
             muteToggleButton.innerHTML = newMutedState ? muteIcon : unmuteIcon;
@@ -516,7 +509,6 @@ async function openInfoModal(mediaType, itemId) {
                 }
             });
         });
-        // Automatically click the first season button to load its episodes
         if (seasonButtons.length > 0) {
             seasonButtons[0].click();
         }
@@ -608,9 +600,7 @@ function displaySearchResults(results, query) {
 
 document.addEventListener('DOMContentLoaded', initializePage);
 
-// --- CONTENT FILTERING LOGIC ---
 function filterContent(filter) {
-    // This now correctly filters the dynamically generated rows
     const allContent = document.querySelectorAll('#shuffled-rows-container .content-row');
     allContent.forEach(section => {
         if (filter === 'all' || section.dataset.contentType === filter) {
@@ -621,7 +611,6 @@ function filterContent(filter) {
     });
 }
 
-// --- MOBILE FILTERING LOGIC ---
 function setupMobileFiltering() {
     const mobileFilterButtons = document.querySelectorAll('.mobile-filters button');
     mobileFilterButtons.forEach(button => {
@@ -638,13 +627,11 @@ function setupMobileFiltering() {
                 filterContent('movie');
                 setupHeroSection('movie');
             } else if (buttonText.includes('Categories')) {
-                // Categories functionality will be implemented later
             }
         });
     });
 }
 
-// --- DESKTOP NAVIGATION FILTERING ---
 function setupNavFiltering() {
     const navLinks = document.querySelectorAll('.main-nav li[id]');
     navLinks.forEach(link => {
@@ -673,14 +660,12 @@ function setupNavFiltering() {
     });
 }
 
-// Initialize filtering
 document.addEventListener('DOMContentLoaded', () => {
     setupMobileFiltering();
     setupNavFiltering();
     setupMobileSearch();
 });
 
-// --- MOBILE SEARCH FUNCTIONALITY ---
 function setupMobileSearch() {
     const searchIconTrigger = document.getElementById('search-icon-trigger');
     const mobileSearchPopup = document.getElementById('mobile-search-popup');
@@ -828,18 +813,16 @@ document.addEventListener('click', function (event) {
     const mobileResultItem = event.target.closest('.mobile-result-item');
 
     if (event.target.closest('.btn-mylist-mobile')) {
-        return; // Exclude My List button on mobile hero
+        return;
     }
 
     if (playButton) {
         event.preventDefault();
 
-        // --- PAUSE TRAILER LOGIC START ---
         const infoModal = document.getElementById('info-modal');
         if (infoModal.classList.contains('active')) {
             const trailerIframe = infoModal.querySelector('#modal-trailer-video');
             if (trailerIframe) {
-                // Send pause command to YouTube iframe
                 trailerIframe.contentWindow.postMessage(JSON.stringify({
                     event: 'command',
                     func: 'pauseVideo',
@@ -847,14 +830,12 @@ document.addEventListener('click', function (event) {
                 }), '*');
             }
         }
-        // --- PAUSE TRAILER LOGIC END ---
 
         const playerUrl = playButton.getAttribute('href') || playButton.dataset.url;
         const mediaContainer = playButton.closest('[data-id][data-type]');
 
         if (playerUrl && mediaContainer) {
             const { id, type } = mediaContainer.dataset;
-            // We no longer close the info modal here, so the trailer can be resumed.
             openPlayerModal(playerUrl, type, id);
         } else if (playerUrl) {
             const hero = document.querySelector('.hero-frame-mobile, .hero-content');
@@ -880,8 +861,7 @@ document.addEventListener('click', function (event) {
         if (id && type) openInfoModal(type, id);
     }
 
-    // Modal closing logic
-    if (event.target.closest('.modal-close-btn') || event.target.matches('.modal-backdrop')) {
+    if (event.target.closest('.modal-close-btn, .modal-back-btn') || event.target.matches('.modal-backdrop')) {
         closeInfoModal();
     }
     if (event.target.closest('#close-player-btn')) {
