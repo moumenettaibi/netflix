@@ -1613,3 +1613,184 @@ main {
     text-decoration: underline;
     cursor: pointer;
 }
+
+
+/* --- DETAILS & ACTOR WORKS POPUP STYLES --- */
+.details-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(18, 18, 18, 0.95);
+    z-index: 4000;
+    display: none; /* Hidden by default */
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 50px 20px;
+    box-sizing: border-box;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.details-popup.active {
+    display: flex;
+}
+
+.details-popup-content {
+    background-color: #2f2f2f;
+    color: var(--text-color);
+    width: 100%;
+    max-width: 500px;
+    padding: 30px;
+    border-radius: 8px;
+    position: relative;
+    animation: modal-fade-in 0.3s ease-out;
+}
+
+.popup-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: #1f1f1f;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-close-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: #fff;
+}
+
+.details-popup h2 {
+    font-size: 2rem;
+    margin: 0;
+    padding-right: 40px; /* Space for close button */
+    margin-bottom: 24px;
+}
+
+.detail-section {
+    margin-bottom: 24px;
+    border-top: 1px solid #404040;
+    padding-top: 24px;
+}
+
+.detail-section:first-of-type {
+    border-top: none;
+    padding-top: 0;
+}
+
+.detail-section h3 {
+    font-size: 1rem;
+    color: var(--text-muted-color);
+    margin: 0 0 12px 0;
+    font-weight: normal;
+}
+
+.detail-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-list li, .detail-list a {
+    font-size: 1rem;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.detail-list .clickable-item {
+    cursor: pointer;
+    transition: text-decoration 0.2s ease;
+}
+.detail-list .clickable-item:hover {
+    text-decoration: underline;
+}
+
+/* --- ACTOR WORKS POPUP (REVISED) --- */
+.actor-works-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(18, 18, 18, 0.95);
+    z-index: 5000;
+    display: none;
+    align-items: center; /* Vertically center */
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.actor-works-popup.active {
+    display: flex;
+}
+
+.actor-works-popup-content {
+    background-color: #181818;
+    color: var(--text-color);
+    width: 100%;
+    max-width: 950px; /* Wider for more columns */
+    border-radius: 8px;
+    position: relative;
+    animation: modal-fade-in 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    height: 90vh; /* Fixed height */
+    max-height: 90vh;
+}
+
+.actor-works-popup h2 {
+    font-size: 1.5rem;
+    padding: 30px 30px 0 30px;
+    margin-bottom: 20px;
+    flex-shrink: 0; /* Prevent title from shrinking */
+}
+
+.actor-works-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+    overflow-y: auto; /* Make this grid scrollable */
+    flex-grow: 1; /* Allow it to fill available space */
+    padding: 0 30px 30px 30px;
+    scrollbar-width: thin;
+    scrollbar-color: #555 #181818;
+}
+
+.actor-works-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.actor-works-grid::-webkit-scrollbar-track {
+    background: #181818;
+}
+
+.actor-works-grid::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 4px;
+}
+
+.actor-works-grid .poster-card {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3;
+}
+.actor-works-grid .poster-card img {
+    width: 100%;
+    height: 100%;
+}

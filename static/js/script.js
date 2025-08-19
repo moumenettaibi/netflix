@@ -276,7 +276,7 @@ async function setupHeroSection(mediaType = 'all') {
                  const mediaTypeDisplay = featuredMediaType === 'movie' ? 'Movies' : 'TV Shows';
                  heroContainer.style.backgroundImage = `url(${backdropBaseUrl}${featured.backdrop_path})`;
                  heroContainer.innerHTML = `
-                    <div class="hero-content">
+                    <div class="hero-content" data-id="${featured.id}" data-type="${featuredMediaType}">
                         <h1 class="hero-title">${featured.name || featured.title}</h1>
                         <div class="hero-rank-badge">
                             <div class="hero-rank-square"><div class="top-text">TOP</div><div class="number-text">10</div></div>
@@ -285,10 +285,10 @@ async function setupHeroSection(mediaType = 'all') {
                         <p class="hero-overview">${featured.overview}</p>
                         <div class="hero-buttons">
                             <a href="${playerUrl}" class="btn btn-play js-play-trigger"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z" fill="currentColor"></path></svg>Play</a>
-                            <a href="#" class="btn btn-more-info" data-id="${featured.id}" data-type="${featuredMediaType}">
+                            <button class="btn btn-more-info" data-id="${featured.id}" data-type="${featuredMediaType}">
                                 <svg viewBox="0 0 24 24"><path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"/></svg>
                                 More info
-                            </a>
+                            </button>
                         </div>
                     </div>`;
             }
@@ -377,8 +377,8 @@ async function openInfoModal(mediaType, itemId) {
     const releaseYear = (data.first_air_date || data.release_date || '').substring(0, 4);
     const seasons = data.number_of_seasons ? `${data.number_of_seasons} Seasons` : '';
     const overview = data.overview;
-    const cast = data.credits?.cast.slice(0, 3).map(c => `<a href="#" class="meta-link" data-query="${c.name}">${c.name}</a>`).join(', ');
-    const genres = data.genres.map(g => `<a href="#" class="meta-link" data-query="${g.name}">${g.name}</a>`).join(', ');
+    const cast = data.credits?.cast.slice(0, 4).map(c => c.name).join(', ') + '...';
+    const genres = data.genres.map(g => g.name).join(', ');
     const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
     let rating = '';
     if (data.content_ratings?.results) {
@@ -445,20 +445,17 @@ async function openInfoModal(mediaType, itemId) {
                 <div class="modal-main-content-grid">
                     <div class="modal-description"><p>${overview}</p></div>
                     <aside class="modal-meta-data">
-                        <p><span class="label">Cast:</span> <span class="value">${cast}</span></p>
-                        <p><span class="label">Genres:</span> <span class="value">${genres}</span></p>
+                        <p><span class="label">Cast:</span> <span class="value clickable-details" style="cursor: pointer;">${cast}</span></p>
+                        <p><span class="label">Genres:</span> <span class="value clickable-details" style="cursor: pointer;">${genres}</span></p>
                     </aside>
                 </div>
                 ${episodesHtml}
             </div>
         </div>`;
 
-    infoModal.querySelectorAll('.meta-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const query = link.dataset.query;
-            closeInfoModal();
-            performSearch(query);
+    infoModal.querySelectorAll('.clickable-details').forEach(element => {
+        element.addEventListener('click', () => {
+            openDetailsPopup(data);
         });
     });
 
@@ -522,6 +519,110 @@ function closeInfoModal() {
     infoModal.classList.remove('active');
     infoModal.innerHTML = '';
 }
+
+// --- NEW POPUP FUNCTIONS ---
+function openDetailsPopup(data) {
+    const detailsPopup = document.getElementById('details-popup');
+    const title = data.name || data.title;
+
+    // Creators/Directors
+    const creators = data.credits?.crew.filter(c => c.job === 'Director' || c.job === 'Creator' || c.job === 'Executive Producer') || [];
+    const uniqueCreators = [...new Map(creators.map(item => [item['name'], item])).values()].slice(0, 5); // Limit to 5
+
+    // Maturity Rating
+    let ratingInfo = 'Not Rated';
+    if (data.content_ratings?.results) {
+        const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+        if (usRating?.rating) ratingInfo = usRating.rating;
+    }
+
+    detailsPopup.innerHTML = `
+        <div class="details-popup-content">
+            <button class="popup-close-btn" id="close-details-popup-btn">
+                <svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg>
+            </button>
+            <h2>${title}</h2>
+            
+            <div class="detail-section">
+                <h3>Cast</h3>
+                <ul class="detail-list">
+                    ${data.credits.cast.map(person => `<li><span class="clickable-item" data-person-id="${person.id}" data-person-name="${person.name}">${person.name}</span></li>`).join('')}
+                </ul>
+            </div>
+
+            ${uniqueCreators.length > 0 ? `
+            <div class="detail-section">
+                <h3>Creators</h3>
+                <ul class="detail-list">
+                    ${uniqueCreators.map(person => `<li>${person.name}</li>`).join('')}
+                </ul>
+            </div>` : ''}
+
+            <div class="detail-section">
+                <h3>Genres</h3>
+                <ul class="detail-list">
+                    ${data.genres.map(genre => `<li>${genre.name}</li>`).join('')}
+                </ul>
+            </div>
+            
+            <div class="detail-section">
+                <h3>Maturity Rating</h3>
+                <ul class="detail-list">
+                    <li><strong>${ratingInfo}</strong></li>
+                </ul>
+            </div>
+        </div>
+    `;
+    detailsPopup.classList.add('active');
+}
+
+function closeDetailsPopup() {
+    const detailsPopup = document.getElementById('details-popup');
+    detailsPopup.classList.remove('active');
+    detailsPopup.innerHTML = '';
+}
+
+async function openActorWorksPopup(personId, personName) {
+    const actorWorksPopup = document.getElementById('actor-works-popup');
+    actorWorksPopup.innerHTML = `<div style="position:relative; z-index:1;"><div class="loader"></div></div>`;
+    actorWorksPopup.classList.add('active');
+
+    const url = `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${apiKey}`;
+    const data = await fetchData(url);
+
+    if (!data || !data.cast) {
+         actorWorksPopup.innerHTML = `<p>Could not load works for ${personName}.</p>`;
+         return;
+    }
+
+    const works = data.cast
+        .filter(item => item.poster_path)
+        .sort((a, b) => b.popularity - a.popularity);
+    
+    actorWorksPopup.innerHTML = `
+        <div class="actor-works-popup-content">
+            <button class="popup-close-btn" id="close-actor-works-popup-btn">
+                 <svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg>
+            </button>
+            <h2>${personName}</h2>
+            <div class="actor-works-grid">
+                ${works.map(item => {
+                    const card = createPosterCard(item, item.media_type);
+                    return card ? card.outerHTML : '';
+                }).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function closeActorWorksPopup() {
+    const actorWorksPopup = document.getElementById('actor-works-popup');
+    actorWorksPopup.classList.remove('active');
+    actorWorksPopup.innerHTML = '';
+}
+
+// --- END NEW POPUP FUNCTIONS ---
+
 
 const searchIconTrigger = document.getElementById('search-icon-trigger');
 const headerSearchInput = document.getElementById('header-search-input');
@@ -818,36 +919,36 @@ document.addEventListener('click', function (event) {
 
     if (playButton) {
         event.preventDefault();
-
         const infoModal = document.getElementById('info-modal');
         if (infoModal.classList.contains('active')) {
             const trailerIframe = infoModal.querySelector('#modal-trailer-video');
             if (trailerIframe) {
-                trailerIframe.contentWindow.postMessage(JSON.stringify({
-                    event: 'command',
-                    func: 'pauseVideo',
-                    args: []
-                }), '*');
+                trailerIframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
             }
         }
-
         const playerUrl = playButton.getAttribute('href') || playButton.dataset.url;
         const mediaContainer = playButton.closest('[data-id][data-type]');
-
         if (playerUrl && mediaContainer) {
             const { id, type } = mediaContainer.dataset;
             openPlayerModal(playerUrl, type, id);
         } else if (playerUrl) {
             const hero = document.querySelector('.hero-frame-mobile, .hero-content');
             if (hero) {
-                 const { id, type } = hero.dataset;
-                 openPlayerModal(playerUrl, type, id);
+                const { id, type } = hero.dataset;
+                openPlayerModal(playerUrl, type, id);
             }
         }
     } else if (moreInfoButton) {
         event.preventDefault();
         const { id, type } = moreInfoButton.dataset;
-        if (id && type) openInfoModal(type, id);
+        if (id && type) {
+            const actorWorksPopup = document.getElementById('actor-works-popup');
+            if (actorWorksPopup.contains(moreInfoButton)) {
+                closeActorWorksPopup();
+                closeDetailsPopup();
+            }
+            openInfoModal(type, id);
+        }
     } else if (mobileResultItem && !event.target.closest('.js-play-trigger')) {
         event.preventDefault();
         const { id, type } = mobileResultItem.dataset;
@@ -855,7 +956,7 @@ document.addEventListener('click', function (event) {
             document.getElementById('mobile-search-popup').classList.remove('active');
             openInfoModal(type, id);
         }
-    } else if (posterCard && window.innerWidth <= 480) {
+    } else if (posterCard && window.innerWidth <= 480 && !event.target.closest('.actor-works-grid')) {
         event.preventDefault();
         const { id, type } = posterCard.dataset;
         if (id && type) openInfoModal(type, id);
@@ -866,6 +967,33 @@ document.addEventListener('click', function (event) {
     }
     if (event.target.closest('#close-player-btn')) {
         closePlayerModal();
+    }
+    
+    if (event.target.closest('#close-details-popup-btn')) {
+        closeDetailsPopup();
+    }
+    if (event.target.closest('#close-actor-works-popup-btn')) {
+        closeActorWorksPopup();
+    }
+
+    const personLink = event.target.closest('.clickable-item[data-person-id]');
+    if (personLink) {
+        const personId = personLink.dataset.personId;
+        const personName = personLink.dataset.personName;
+        openActorWorksPopup(personId, personName);
+    }
+
+    const actorWorksPopup = document.getElementById('actor-works-popup');
+    if (actorWorksPopup.contains(event.target)) {
+        const poster = event.target.closest('.poster-card');
+        if (poster && !event.target.closest('.action-btn')) {
+             const { id, type } = poster.dataset;
+             if (id && type) {
+                 closeActorWorksPopup();
+                 closeDetailsPopup();
+                 openInfoModal(type, id);
+             }
+        }
     }
 });
 
