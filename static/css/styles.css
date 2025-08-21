@@ -639,7 +639,7 @@ main {
 }
 
 .modal-back-btn {
-    position: absolute;
+    position: fixed;
     top: 16px;
     left: 16px;
     width: 36px;
@@ -649,7 +649,7 @@ main {
     color: white;
     border: none;
     cursor: pointer;
-    z-index: 10;
+    z-index: 3001;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1166,8 +1166,9 @@ main {
     }
 
     .modal-media-container {
-        margin-top: calc(-90px + env(safe-area-inset-top, 0px)) !important; /* Push below the bar */
-        padding-top: 80% !important;
+        margin-top: 0px; /* Push below the bar */
+        padding-top: 80%;
+        background-color: #000;
     }
 
     .modal-media-container::after {
