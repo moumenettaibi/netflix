@@ -1307,30 +1307,32 @@ main {
     }
 
     .mobile-play-btn {
-        background-color: transparent;
-        border: 2px solid rgba(255, 255, 255, 0.7);
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
-        width: 44px;
-        height: 44px;
-        cursor: pointer;
+        border: 2px solid rgba(255, 255, 255, 0.7);
+        background-color: rgba(42, 42, 42, 0.6);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0;
+        cursor: pointer;
         transition: all 0.2s ease;
+        text-decoration: none;
+        flex-shrink: 0;
     }
 
     .mobile-play-btn:hover {
-        background-color: rgba(255, 255, 255, 0.2);
         border-color: white;
+        background-color: rgba(255, 255, 255, 0.9);
     }
 
     .mobile-play-btn svg {
-        width: 24px;
-        height: 24px;
-        fill: #FFFFFF;
-        margin-left: 3px;
+        width: 18px;
+        height: 18px;
+        fill: white;
     }
+
+    
 
     header {
         padding: 5px 15px 5px 0px;
