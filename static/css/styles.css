@@ -1154,9 +1154,20 @@ main {
         background-color: var(--background-color) !important;
     }
 
+    #info-modal::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: calc(60px + env(safe-area-inset-top, 0px)); /* Bar height + safe area */
+        background-color: #000;
+        z-index: 5;
+    }
+
     .modal-media-container {
+        margin-top: calc(-90px + env(safe-area-inset-top, 0px)) !important; /* Push below the bar */
         padding-top: 80% !important;
-        margin-top: -130px !important;
     }
 
     .modal-media-container::after {
