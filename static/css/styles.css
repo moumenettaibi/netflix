@@ -1568,6 +1568,55 @@ main {
         margin-right: 25px; /* Adjust spacing between ranked items */
         align-items: flex-end; /* Align number and poster to the bottom */
     }
+
+    /* --- Safe Area Insets for Mobile Overlays --- */
+    .modal-content-wrapper,
+    .details-popup,
+    .player-modal,
+    .actor-works-popup,
+    .mobile-search-popup {
+        box-sizing: border-box;
+    }
+
+    .modal-content-wrapper,
+    .details-popup,
+    .actor-works-popup,
+    .mobile-search-popup {
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .player-modal {
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+    }
+
+    .close-player-btn {
+        top: calc(30px + env(safe-area-inset-top, 0px));
+        left: calc(20px + env(safe-area-inset-left, 0px)) !important;
+    }
+
+    .modal-back-btn {
+        top: calc(16px + env(safe-area-inset-top, 0px));
+        left: calc(16px + env(safe-area-inset-left, 0px));
+    }
+
+    .popup-close-btn {
+        top: calc(15px + env(safe-area-inset-top, 0px));
+        right: calc(15px + env(safe-area-inset-right, 0px));
+    }
+
+    #next-episode-btn {
+        bottom: calc(50px + env(safe-area-inset-bottom, 0px));
+        right: calc(50px + env(safe-area-inset-right, 0px));
+    }
+
+    .modal-close-btn {
+        top: calc(16px + env(safe-area-inset-top, 0px));
+        right: calc(16px + env(safe-area-inset-right, 0px));
+    }
 }
 
 @media (min-width: 481px) {
