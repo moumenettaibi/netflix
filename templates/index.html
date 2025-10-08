@@ -39,7 +39,7 @@
                     alt="Netflix Logo" class="header-logo"></a>
 
             <img src="static/netflix-logo.png" alt="N" class="mobile-logo">
-            <h1 class="mobile-page-title">Home</h1>
+            <h1 class="mobile-page-title">Startseite</h1>
 
             <nav class="main-nav">
                 <ul>
@@ -60,19 +60,21 @@
                 <input type="text" id="header-search-input" placeholder="Titles, people, genres" autocomplete="off">
                 <span id="close-search-icon">&times;</span>
             </div>
+            <svg id="download-icon" class="nav-download-icon" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
+            </svg>
             <svg id="search-icon-trigger" class="nav-search-icon" viewBox="0 0 24 24">
                 <path
                     d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z">
                 </path>
             </svg>
         </div>
+        <nav class="mobile-filters">
+            <button>Serien</button>
+            <button>Filme</button>
+            <button>Kategorien <svg viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"></path></svg></button>
+        </nav>
     </header>
-
-    <nav class="mobile-filters">
-        <button>TV Shows</button>
-        <button>Movies</button>
-        <button>Categories <svg viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"></path></svg></button>
-    </nav>
 
     <section id="search-results-section" class="search-results-section">
         <div id="search-results"></div>
@@ -127,6 +129,7 @@
 
     <footer></footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
 </body>

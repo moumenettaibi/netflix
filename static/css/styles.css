@@ -92,11 +92,16 @@ header.scrolled {
     font-weight: bold;
 }
 
-.nav-search-icon {
+.nav-search-icon,
+.nav-download-icon {
     height: 24px;
     width: 24px;
     cursor: pointer;
     fill: var(--text-color);
+}
+
+.nav-download-icon {
+    display: none; /* Hidden by default, shown on mobile */
 }
 
 /* --- MODIFIED IN-HEADER SEARCH (IMPROVED) --- */
@@ -1126,13 +1131,27 @@ main {
         display: none !important;
     }
 
+    #info-modal {
+        align-items: flex-end;
+    }
+
     .modal-content-wrapper {
         width: 100% !important;
         max-width: 100% !important;
-        height: 100vh !important;
-        max-height: 100vh !important;
-        border-radius: 0 !important;
+        height: auto !important;
+        max-height: 90vh !important;
+        border-radius: 16px 16px 0 0 !important;
         margin: 0 !important;
+        animation: slide-up 0.3s ease-out;
+    }
+
+    @keyframes slide-up {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
     }
 
     .modal-content-overlay {
@@ -1154,21 +1173,11 @@ main {
         background-color: var(--background-color) !important;
     }
 
-    #info-modal::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: calc(60px + env(safe-area-inset-top, 0px)); /* Bar height + safe area */
-        background-color: #000;
-        z-index: 5;
-    }
-
     .modal-media-container {
-        margin-top: 0px; /* Push below the bar */
-        padding-top: 80%;
-        background-color: #000;
+        padding-top: 56.25%;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 16px 16px 0;
     }
 
     .modal-media-container::after {
@@ -1176,7 +1185,7 @@ main {
     }
 
     .modal-content-wrapper {
-        background-color: var(--background-color) !important;
+        background-color: #2a2a2a !important;
     }
 
     .close-player-btn {
@@ -1348,13 +1357,18 @@ main {
 
     header {
         padding: 5px 15px 5px 0px;
-        background-color: var(--background-color) !important;
-        position: relative;
+        background-color: transparent !important;
+        position: absolute;
+        flex-wrap: wrap;
     }
 
     .header-left {
         gap: 8px;
         margin-left: 4px;
+    }
+    .header-right {
+        flex-grow: 1;
+        justify-content: flex-end;
     }
 
     .header-logo {
@@ -1377,6 +1391,12 @@ main {
     .main-nav {
         display: none;
     }
+
+    .nav-download-icon {
+        display: block; /* Show on mobile */
+        width: 28px;
+        height: 28px;
+    }
     
     .nav-search-icon {
         width: 28px;
@@ -1386,7 +1406,9 @@ main {
     .mobile-filters {
         display: flex;
         gap: 8px;
-        padding: 0 15px 15px 15px;
+        padding: 15px 15px 15px 15px;
+        order: 3;
+        width: 100%;
     }
 
     .mobile-filters button {
@@ -1484,16 +1506,37 @@ main {
         text-shadow: none;
     }
 
-    .hero-frame-mobile .hero-tags-mobile {
-        font-size: 0.9rem;
-        color: #ddd;
+    .hero-frame-mobile .hero-type-logo {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #fff;
+        letter-spacing: 0.2em;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
     }
-     .hero-tags-mobile span::after {
-        content: ' • ';
-        margin: 0 4px;
+
+    .hero-frame-mobile .hero-rank-badge {
+        justify-content: center;
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 500;
     }
-    .hero-tags-mobile span:last-child::after {
-        content: '';
+
+    .hero-frame-mobile .hero-rank-text {
+        text-shadow: none;
+    }
+
+    .hero-frame-mobile .hero-rank-square {
+        width: 28px;
+        height: 28px;
+        border-radius: 2px;
+    }
+
+    .hero-frame-mobile .hero-rank-square .top-text {
+        font-size: 0.4rem;
+    }
+
+    .hero-frame-mobile .hero-rank-square .number-text {
+        font-size: 0.7rem;
     }
 
     .hero-frame-mobile .hero-buttons-mobile {
@@ -1509,8 +1552,8 @@ main {
         align-items: center;
         justify-content: center;
         gap: 8px;
-        padding: 12px;
-        border-radius: 8px;
+        padding: 10px;
+        border-radius: 4px;
         font-size: 1rem;
         font-weight: bold;
         border: none;
@@ -1523,19 +1566,19 @@ main {
         text-decoration: none;
     }
     .btn-play-mobile svg {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
         fill: black;
     }
 
     .btn-mylist-mobile {
-        background-color: rgba(74, 74, 74, 0.8);
+        background-color: #262626;
         color: white;
-        border: 1px solid rgba(150,150,150,0.5);
+        border: none;
     }
     .btn-mylist-mobile svg {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
         fill: white;
     }
 

@@ -229,6 +229,7 @@ async function createAndDisplayShuffledRows() {
 async function setupHeroSection(mediaType = 'all') {
     const heroContainer = document.getElementById('hero-container');
     heroContainer.innerHTML = '<div class="loader"></div>';
+    heroContainer.style.backgroundColor = '#000'; // Default background
 
     try {
         const isMobile = window.innerWidth <= 480;
@@ -249,26 +250,50 @@ async function setupHeroSection(mediaType = 'all') {
             const playerUrl = `${playerBaseUrl}/${featuredMediaType}/${featured.id}`;
 
             if (isMobile) {
-                const detailsUrl = `https://api.themoviedb.org/3/${featuredMediaType}/${featured.id}?api_key=${apiKey}`;
-                const details = await fetchData(detailsUrl);
-                const genreTags = details.genres.slice(0, 5).map(g => `<span>${g.name}</span>`).join('');
+                const imageUrl = `${posterBaseUrl}${featured.poster_path}`;
+                const proxyImageUrl = `https://images.weserv.nl/?url=${imageUrl.replace(/^https?:\/\//, '')}&w=100`;
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.src = proxyImageUrl;
+                img.onload = () => {
+                    try {
+                        const colorThief = new ColorThief();
+                        const dominantColor = colorThief.getColor(img);
+                        heroContainer.style.backgroundColor = `rgb(${dominantColor.join(',')})`;
+                    } catch (e) {
+                        console.error('Error getting color from image:', e);
+                        heroContainer.style.backgroundColor = '#000';
+                    }
+                };
+                img.onerror = () => {
+                    console.error('Failed to load image for color extraction.');
+                    heroContainer.style.backgroundColor = '#000';
+                };
+
+                const rankInType = (trendingData?.results.findIndex(item => item.id === featured.id) || 0) + 1;
+                const mediaTypeDisplay = featuredMediaType === 'tv' ? 'Serien' : 'Filme';
+                const heroTypeLogo = featuredMediaType === 'tv' ? 'N-SERIE' : 'N-MOVIE';
                 const myList = getStorageData(STORAGE_KEYS.MY_LIST);
                 const isInMyList = myList.some(item => item.id == featured.id && (item.media_type || (item.title ? 'movie' : 'tv')) === featuredMediaType);
-                const myListButtonIcon = isInMyList ? `<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>` : `<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>`;
+                const myListButtonIcon = isInMyList ? `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>` : `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>`;
 
                 heroContainer.innerHTML = `
                 <div class="hero-frame-mobile" data-id="${featured.id}" data-type="${featuredMediaType}">
                     <div class="hero-image" style="background-image: url('${posterBaseUrl}${featured.poster_path}')"></div>
                     <div class="hero-gradient"></div>
                     <div class="hero-info">
+                        <div class="hero-type-logo">${heroTypeLogo}</div>
                         <h1 class="hero-title-mobile">${featured.name || featured.title}</h1>
-                        <div class="hero-tags-mobile">${genreTags}</div>
+                        <div class="hero-rank-badge">
+                            <div class="hero-rank-square"><div class="top-text">TOP</div><div class="number-text">10</div></div>
+                            <div class="hero-rank-text">Heute die Nr. ${rankInType} der ${mediaTypeDisplay}</div>
+                        </div>
                         <div class="hero-buttons-mobile">
                             <a href="${playerUrl}" class="btn-play-mobile js-play-trigger">
-                                <svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"></path></svg>Play
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l15 8-15 8z"></path></svg>Abspielen
                             </a>
                             <button class="btn-mylist-mobile" data-id="${featured.id}" data-type="${featuredMediaType}" onclick="event.stopPropagation(); addToMyList('${featured.id}', '${featuredMediaType}')">
-                                ${myListButtonIcon} My List
+                                ${myListButtonIcon} Meine Liste
                             </button>
                         </div>
                     </div>
@@ -419,8 +444,8 @@ async function openInfoModal(mediaType, itemId) {
     infoModal.innerHTML = `
         <div class="modal-backdrop"></div>
         <div class="modal-content-wrapper">
-            <button class="modal-back-btn" title="Back">
-                <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path></svg>
+            <button class="popup-close-btn modal-close-btn" title="Close">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg>
             </button>
             <div class="modal-media-container" ${backgroundStyle}>
                 ${mediaContent}
