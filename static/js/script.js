@@ -3,6 +3,40 @@ const posterBaseUrl = 'https://image.tmdb.org/t/p/w500';
 const backdropBaseUrl = 'https://image.tmdb.org/t/p/original';
 const playerBaseUrl = 'https://player.videasy.net';
 
+// Server-backed caches (loaded on startup)
+let MY_LIST_CACHE = [];
+let LIKED_LIST_CACHE = [];
+
+// Persistent browser cache for fast startup
+const CACHE_KEYS = {
+    MY_LIST: 'srv_my_list_v1',
+    LIKES: 'srv_likes_v1'
+};
+
+function cacheWrite(key, data) {
+    try { localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
+}
+function cacheRead(key) {
+    try { const v = JSON.parse(localStorage.getItem(key) || ''); return (v && v.data) || []; } catch (_) { return []; }
+}
+
+async function apiGet(path) {
+    const res = await fetch(path, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`GET ${path} failed`);
+    return res.json();
+}
+
+async function apiSend(path, method, body) {
+    const res = await fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+        credentials: 'same-origin'
+    });
+    if (!res.ok) throw new Error(`${method} ${path} failed`);
+    return res.json();
+}
+
 function createPosterCard(item, mediaType) {
     if (!item.poster_path) return null;
     const posterElement = document.createElement('div');
@@ -60,10 +94,10 @@ async function fetchAndPopulateHoverCard(card) {
         if (usRating) rating = usRating.rating;
     }
     const genreTags = data.genres.slice(0, 3).map(g => `<span>${g.name}</span>`).join('');
-    const likedList = getStorageData(STORAGE_KEYS.LIKED_LIST);
+    const likedList = LIKED_LIST_CACHE || [];
     const isLiked = likedList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
     const likedClass = isLiked ? 'liked' : '';
-    const myList = getStorageData(STORAGE_KEYS.MY_LIST);
+    const myList = MY_LIST_CACHE || [];
     const isInMyList = myList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
     const addedClass = isInMyList ? 'added' : '';
     const addListIcon = isInMyList ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>' : '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
@@ -90,12 +124,25 @@ const initializePage = async () => {
     createAndDisplayShuffledRows(); // New all-in-one function for content rows
 };
 
+function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+    return new Promise((resolve, reject) => {
+        const controller = new AbortController();
+        const id = setTimeout(() => {
+            controller.abort();
+            reject(new Error('timeout'));
+        }, timeoutMs);
+        fetch(url, { ...options, signal: controller.signal })
+            .then(res => { clearTimeout(id); resolve(res); })
+            .catch(err => { clearTimeout(id); reject(err); });
+    });
+}
+
 async function fetchData(url) {
     try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const response = await fetchWithTimeout(url, {}, 8000);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return await response.json();
-    } catch (error) { console.error('Error fetching data:', error); return null; }
+    } catch (error) { console.warn('Fetch failed:', url, error.message); return null; }
 }
 
 const customCategories = [
@@ -161,7 +208,7 @@ async function createAndDisplayShuffledRows() {
             url: `https://api.themoviedb.org/3/trending/tv/day?api_key=${apiKey}&region=${countryDetails.region}`
         },
         // Custom Category Rows
-        ...customCategories.map(category => {
+        ...customCategories.slice(0, 8).map(category => {
             let title = category.name;
             if (!title.includes('Movies') && !title.includes('Shows') && !title.includes('Dramas') && !title.includes('Pleasers') && !title.includes('Weekend')) {
                  title = `${category.name} ${category.type === 'movie' ? 'Movies' : 'TV Shows'}`;
@@ -252,7 +299,7 @@ async function setupHeroSection(mediaType = 'all') {
                 const detailsUrl = `https://api.themoviedb.org/3/${featuredMediaType}/${featured.id}?api_key=${apiKey}`;
                 const details = await fetchData(detailsUrl);
                 const genreTags = details.genres.slice(0, 5).map(g => `<span>${g.name}</span>`).join('');
-                const myList = getStorageData(STORAGE_KEYS.MY_LIST);
+                const myList = MY_LIST_CACHE || [];
                 const isInMyList = myList.some(item => item.id == featured.id && (item.media_type || (item.title ? 'movie' : 'tv')) === featuredMediaType);
                 const myListButtonIcon = isInMyList ? `<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>` : `<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>`;
 
@@ -307,13 +354,37 @@ function openPlayerModal(url, mediaType, itemId) {
     const playerModal = document.getElementById('player-modal');
     const playerContainer = document.getElementById('player-container');
     if (playerContainer && playerModal) {
-        playerContainer.innerHTML = `<iframe src="${url}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+        playerContainer.innerHTML = '';
+        const loader = document.createElement('div');
+        loader.className = 'loader';
+        loader.style.position = 'absolute';
+        loader.style.left = '50%';
+        loader.style.top = '50%';
+        loader.style.transform = 'translate(-50%, -50%)';
+        playerContainer.appendChild(loader);
+
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        iframe.allow = 'autoplay; fullscreen';
+        iframe.allowFullscreen = true;
+        iframe.onload = () => { loader.remove(); };
+        iframe.onerror = () => {
+            loader.remove();
+            const fallback = document.createElement('div');
+            fallback.style.color = '#fff';
+            fallback.style.textAlign = 'center';
+            fallback.style.paddingTop = '20vh';
+            fallback.innerHTML = `Player failed to load. <a style="color:#fff;text-decoration:underline" href="${url}" target="_blank">Open in new tab</a>`;
+            playerContainer.appendChild(fallback);
+        };
+        playerContainer.appendChild(iframe);
+
         playerModal.classList.add('active');
         document.body.classList.add('modal-open');
 
         window.addEventListener('message', async (event) => {
-            if (event.source !== playerContainer.querySelector('iframe').contentWindow) return;
-
+            const ifr = playerContainer.querySelector('iframe');
+            if (!ifr || event.source !== ifr.contentWindow) return;
             if (event.data.type === 'episodeEnded') {
                 const nextEpisodeButton = document.createElement('button');
                 nextEpisodeButton.id = 'next-episode-btn';
@@ -323,12 +394,11 @@ function openPlayerModal(url, mediaType, itemId) {
                     const nextEpisodeNumber = parseInt(currentEpisode) + 1;
                     const seasonsUrl = `https://api.themoviedb.org/3/tv/${itemId}?api_key=${apiKey}`;
                     const seasonsData = await fetchData(seasonsUrl);
-                    const currentSeasonData = seasonsData.seasons.find(s => s.season_number == currentSeason);
+                    const currentSeasonData = seasonsData?.seasons?.find(s => s.season_number == currentSeason);
                     if (currentSeasonData && nextEpisodeNumber <= currentSeasonData.episode_count) {
                         const nextEpisodeUrl = `${playerBaseUrl}/tv/${itemId}/${currentSeason}/${nextEpisodeNumber}`;
                         openPlayerModal(nextEpisodeUrl, mediaType, itemId);
                     } else {
-                        // Handle end of season or series
                         closePlayerModal();
                     }
                 };
@@ -364,14 +434,43 @@ async function openInfoModal(mediaType, itemId) {
     document.body.classList.add('modal-open');
     const infoModal = document.getElementById('info-modal');
     infoModal.classList.add('active');
-    infoModal.innerHTML = `<div class="modal-backdrop"></div><div style="position:relative; z-index:1;"><div class="loader"></div></div>`;
+    // Show fast skeleton with a working Play button immediately
+    const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
+    infoModal.innerHTML = `
+        <div class="modal-backdrop"></div>
+        <div class="modal-content-wrapper">
+            <button class="modal-back-btn" title="Back">
+                <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path></svg>
+            </button>
+            <div class="modal-media-container">
+                <div class="loader" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)"></div>
+                <div class="modal-content-overlay">
+                    <h2 class="modal-title">Loading...</h2>
+                    <div class="modal-action-buttons">
+                        <a href="${playerUrl}" class="modal-play-btn js-play-trigger"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z" fill="currentColor"></path></svg>Play</a>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-metadata-row"></div>
+                <div class="modal-main-content-grid">
+                    <div class="modal-description"><p></p></div>
+                    <aside class="modal-meta-data"></aside>
+                </div>
+            </div>
+        </div>`;
 
+    // Fetch details in background with timeout; then enhance UI
     const appendToResponse = 'videos,content_ratings,credits' + (mediaType === 'tv' ? ',season/1' : '');
     const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}&append_to_response=${appendToResponse}`;
 
     const data = await fetchData(url);
     if (!data) {
-        infoModal.innerHTML = '<p>Could not load details.</p>';
+        const mediaContainer = infoModal.querySelector('.modal-media-container');
+        mediaContainer.style.background = '#000';
+        const titleEl = infoModal.querySelector('.modal-title');
+        if (titleEl) titleEl.textContent = 'Details unavailable';
+        // Keep Play button usable
         return;
     }
 
@@ -381,7 +480,7 @@ async function openInfoModal(mediaType, itemId) {
     const overview = data.overview;
     const cast = data.credits?.cast.slice(0, 4).map(c => c.name).join(', ') + '...';
     const genres = data.genres.map(g => g.name).join(', ');
-    const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
+    // Update with real content
     let rating = '';
     if (data.content_ratings?.results) {
         const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
@@ -389,13 +488,13 @@ async function openInfoModal(mediaType, itemId) {
     }
     const officialTrailer = data.videos?.results.find(v => v.site === 'YouTube' && v.type === 'Trailer');
     const mediaContent = officialTrailer ? `<iframe id="modal-trailer-video" src="https://www.youtube.com/embed/${officialTrailer.key}?autoplay=1&mute=1&controls=0&loop=1&playlist=${officialTrailer.key}&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>` : '';
-    const backgroundStyle = !officialTrailer ? `style="background-image: url('${backdropBaseUrl}${data.backdrop_path}')"` : '';
+    const backgroundStyle = !officialTrailer && data.backdrop_path ? `style="background-image: url('${backdropBaseUrl}${data.backdrop_path}')"` : '';
     const playIcon = `<svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z" fill="currentColor"></path></svg>`;
     const likeIcon = `<svg viewBox="0 0 24 24"><path d="M23,10C23,8.89,22.1,8,21,8H14.68L15.64,3.43C15.66,3.33,15.67,3.22,15.67,3.11C15.67,2.7,15.5,2.32,15.23,2.05L14.17,1L7.59,7.59C7.22,7.95,7,8.45,7,9V19A2,2 0 0,0 9,21H18C18.83,21,19.54,20.5,19.84,19.78L22.86,12.73C22.95,12.5,23,12.26,23,12V10M1,21H5V9H1V21Z"></path></svg>`;
-    const likedList = getStorageData(STORAGE_KEYS.LIKED_LIST);
+    const likedList = LIKED_LIST_CACHE || [];
     const isLiked = likedList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
     const likedClass = isLiked ? 'liked' : '';
-    const myList = getStorageData(STORAGE_KEYS.MY_LIST);
+    const myList = MY_LIST_CACHE || [];
     const isInMyList = myList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
     const addedClass = isInMyList ? 'added' : '';
     const addListIcon = isInMyList ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>' : '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
@@ -416,9 +515,9 @@ async function openInfoModal(mediaType, itemId) {
         episodesHtml += `</div>`;
     }
 
-    infoModal.innerHTML = `
-        <div class="modal-backdrop"></div>
-        <div class="modal-content-wrapper">
+    const wrapper = infoModal.querySelector('.modal-content-wrapper');
+    if (wrapper) {
+        wrapper.innerHTML = `
             <button class="modal-back-btn" title="Back">
                 <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path></svg>
             </button>
@@ -430,7 +529,7 @@ async function openInfoModal(mediaType, itemId) {
                         <a href="${playerUrl}" class="modal-play-btn js-play-trigger">${playIcon} Play</a>
                         <button class="modal-icon-btn add-list-btn ${addedClass}" title="Add to My List" data-id="${itemId}" data-type="${mediaType}" onclick="addToMyList('${itemId}', '${mediaType}', this)">${addListIcon}</button>
                         <button class="modal-icon-btn like-btn ${likedClass}" title="Like" data-id="${itemId}" data-type="${mediaType}" onclick="addToLikedList('${itemId}', '${mediaType}', this)">${likeIcon}</button>
-                    </div>
+                </div>
                 </div>
                 ${officialTrailer ? `
                 <button class="modal-icon-btn mute-toggle-btn" id="mute-toggle-btn" data-muted="true" title="Unmute">
@@ -452,8 +551,8 @@ async function openInfoModal(mediaType, itemId) {
                     </aside>
                 </div>
                 ${episodesHtml}
-            </div>
-        </div>`;
+            </div>`;
+    }
 
     infoModal.querySelectorAll('.clickable-details').forEach(element => {
         element.addEventListener('click', () => {
@@ -702,6 +801,50 @@ function displaySearchResults(results, query) {
 }
 
 document.addEventListener('DOMContentLoaded', initializePage);
+// Load server state before other UI wiring to reflect correct button states
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // Seed from local cache for instant UI state
+        const cachedMy = cacheRead(CACHE_KEYS.MY_LIST);
+        const cachedLikes = cacheRead(CACHE_KEYS.LIKES);
+        if (cachedMy.length) MY_LIST_CACHE = cachedMy;
+        if (cachedLikes.length) LIKED_LIST_CACHE = cachedLikes;
+
+        [MY_LIST_CACHE, LIKED_LIST_CACHE] = await Promise.all([
+            apiGet('/api/me/my-list'),
+            apiGet('/api/me/likes')
+        ]);
+        cacheWrite(CACHE_KEYS.MY_LIST, MY_LIST_CACHE);
+        cacheWrite(CACHE_KEYS.LIKES, LIKED_LIST_CACHE);
+        // One-time migration from localStorage -> server
+        try {
+            if ((MY_LIST_CACHE || []).length === 0) {
+                const lsMy = JSON.parse(localStorage.getItem('netflix_my_list') || '[]');
+                if (Array.isArray(lsMy) && lsMy.length) {
+                    for (const it of lsMy) {
+                        const media_type = it.media_type || (it.title ? 'movie' : 'tv');
+                        await apiSend('/api/me/my-list', 'POST', { tmdb_id: it.id, media_type, data: it });
+                    }
+                    MY_LIST_CACHE = await apiGet('/api/me/my-list');
+                }
+            }
+            if ((LIKED_LIST_CACHE || []).length === 0) {
+                const lsLiked = JSON.parse(localStorage.getItem('netflix_liked_list') || '[]');
+                if (Array.isArray(lsLiked) && lsLiked.length) {
+                    for (const it of lsLiked) {
+                        const media_type = it.media_type || (it.title ? 'movie' : 'tv');
+                        await apiSend('/api/me/likes', 'POST', { tmdb_id: it.id, media_type, data: it });
+                    }
+                    LIKED_LIST_CACHE = await apiGet('/api/me/likes');
+                }
+            }
+        } catch (migrateErr) { console.warn('Migration from localStorage failed', migrateErr); }
+    } catch (e) {
+        console.warn('Failed to load server lists', e);
+        MY_LIST_CACHE = MY_LIST_CACHE || [];
+        LIKED_LIST_CACHE = LIKED_LIST_CACHE || [];
+    }
+});
 
 function filterContent(filter) {
     const allContent = document.querySelectorAll('#shuffled-rows-container .content-row');
@@ -1029,23 +1172,7 @@ window.addEventListener('scroll', () => {
     }
 });
 
-const STORAGE_KEYS = {
-    MY_LIST: 'netflix_my_list',
-    LIKED_LIST: 'netflix_liked_list'
-};
-
-function getStorageData(key) {
-    try {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } catch (e) { return []; }
-}
-
-function setStorageData(key, data) {
-    try {
-        localStorage.setItem(key, JSON.stringify(data));
-    } catch (e) { console.error('Error writing to localStorage:', e); }
-}
+// localStorage helpers removed; using server-backed caches
 
 function showToast(message) {
     const toast = document.getElementById('toast');
@@ -1055,10 +1182,9 @@ function showToast(message) {
 }
 
 function updateAllButtons(itemId, mediaType) {
-    const likedList = getStorageData(STORAGE_KEYS.LIKED_LIST);
+    const likedList = LIKED_LIST_CACHE || [];
     const isLiked = likedList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
-
-    const myList = getStorageData(STORAGE_KEYS.MY_LIST);
+    const myList = MY_LIST_CACHE || [];
     const isInMyList = myList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
 
     const addListIcon = isInMyList ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>' : '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
@@ -1095,18 +1221,21 @@ async function addToMyList(itemId, mediaType) {
         showToast('Error updating My List');
         return;
     }
-    let myList = getStorageData(STORAGE_KEYS.MY_LIST);
+    let myList = MY_LIST_CACHE || [];
     const existsIndex = myList.findIndex(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
 
     if (existsIndex > -1) {
+        try { await apiSend('/api/me/my-list', 'DELETE', { tmdb_id: itemId, media_type: mediaType }); } catch (e) { /* ignore */ }
         myList.splice(existsIndex, 1);
         showToast(`Removed "${data.title || data.name}" from My List`);
     } else {
         data.media_type = mediaType;
+        try { await apiSend('/api/me/my-list', 'POST', { tmdb_id: itemId, media_type: mediaType, data }); } catch (e) { /* ignore */ }
         myList.unshift(data);
         showToast(`Added "${data.title || data.name}" to My List`);
     }
-    setStorageData(STORAGE_KEYS.MY_LIST, myList);
+    MY_LIST_CACHE = myList;
+    cacheWrite(CACHE_KEYS.MY_LIST, MY_LIST_CACHE);
     updateAllButtons(itemId, mediaType);
 }
 
@@ -1117,16 +1246,19 @@ async function addToLikedList(itemId, mediaType) {
          showToast('Error updating Liked List');
          return;
      }
-     let likedList = getStorageData(STORAGE_KEYS.LIKED_LIST);
+     let likedList = LIKED_LIST_CACHE || [];
      const existsIndex = likedList.findIndex(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
      if (existsIndex > -1) {
+         try { await apiSend('/api/me/likes', 'DELETE', { tmdb_id: itemId, media_type: mediaType }); } catch (e) { /* ignore */ }
          likedList.splice(existsIndex, 1);
          showToast(`Removed "${data.title || data.name}" from Liked List`);
      } else {
          data.media_type = mediaType;
+         try { await apiSend('/api/me/likes', 'POST', { tmdb_id: itemId, media_type: mediaType, data }); } catch (e) { /* ignore */ }
          likedList.unshift(data);
          showToast(`Added "${data.title || data.name}" to Liked List`);
      }
-     setStorageData(STORAGE_KEYS.LIKED_LIST, likedList);
+     LIKED_LIST_CACHE = likedList;
+     cacheWrite(CACHE_KEYS.LIKES, LIKED_LIST_CACHE);
      updateAllButtons(itemId, mediaType);
 }

@@ -3,31 +3,51 @@
         const backdropBaseUrl = 'https://image.tmdb.org/t/p/original';
         const playerBaseUrl = 'https://player.videasy.net';
 
-        const STORAGE_KEYS = {
-            MY_LIST: 'netflix_my_list',
-            CONTINUE_WATCHING: 'netflix_continue_watching',
-            WATCH_HISTORY: 'netflix_watch_history',
-            REMINDERS: 'netflix_reminders',
-            TRAILERS_WATCHED: 'netflix_trailers_watched',
-            LIKED_LIST: 'netflix_liked_list'
-        };
-
-        function getStorageData(key) {
+        const SERVER_SEED = (() => {
             try {
-                const data = localStorage.getItem(key);
-                return data ? JSON.parse(data) : [];
-            } catch (error) {
-                console.error('Error reading from localStorage:', error);
-                return [];
-            }
+                const el = document.getElementById('my-netflix-payload');
+                if (el) {
+                    const txt = el.textContent || el.innerText || '{}';
+                    return JSON.parse(txt);
+                }
+            } catch (e) { /* ignore */ }
+            return (typeof window !== 'undefined' && window.__MY_NETFLIX_INITIAL__) ? window.__MY_NETFLIX_INITIAL__ : {};
+        })();
+
+        // In-memory caches loaded from server
+        let MY_LIST_CACHE = [];
+        let LIKED_LIST_CACHE = [];
+        let TRAILERS_WATCHED_CACHE = [];
+
+        // Persistent browser cache for fast startup
+        const CACHE_KEYS = {
+            MY_LIST: 'srv_my_list_v1',
+            LIKES: 'srv_likes_v1',
+            TRAILERS: 'srv_trailers_v1'
+        };
+        const MEDIA_DETAILS_CACHE = new Map();
+        function cacheWrite(key, data) {
+            try { localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
+        }
+        function cacheRead(key) {
+            try { const v = JSON.parse(localStorage.getItem(key) || ''); return (v && v.data) || []; } catch (_) { return []; }
         }
 
-        function setStorageData(key, data) {
-            try {
-                localStorage.setItem(key, JSON.stringify(data));
-            } catch (error) {
-                console.error('Error writing to localStorage:', error);
-            }
+        async function apiGet(path) {
+            const res = await fetch(path, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error(`GET ${path} failed`);
+            return res.json();
+        }
+
+        async function apiSend(path, method, body) {
+            const res = await fetch(path, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: body ? JSON.stringify(body) : undefined,
+                credentials: 'same-origin'
+            });
+            if (!res.ok) throw new Error(`${method} ${path} failed`);
+            return res.json();
         }
 
         function showToast(message) {
@@ -37,6 +57,32 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
+        }
+
+        function updateAllButtons(itemId, mediaType) {
+            const normalizedType = (mediaType || '').toLowerCase();
+            const likedList = LIKED_LIST_CACHE || [];
+            const myList = MY_LIST_CACHE || [];
+
+            const isLiked = likedList.some(item => String(item.id) === String(itemId) && (item.media_type || resolveMediaIdentifiers(item).mediaType) === normalizedType);
+            const isInMyList = myList.some(item => String(item.id) === String(itemId) && (item.media_type || resolveMediaIdentifiers(item).mediaType) === normalizedType);
+
+            const addListIcon = isInMyList
+                ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>'
+                : '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
+
+            document.querySelectorAll(`.like-btn[data-id="${itemId}"][data-type="${normalizedType}"]`).forEach(button => {
+                button.classList.toggle('liked', isLiked);
+            });
+
+            document.querySelectorAll(`.add-list-btn[data-id="${itemId}"][data-type="${normalizedType}"], .btn-mylist-mobile[data-id="${itemId}"][data-type="${normalizedType}"]`).forEach(button => {
+                button.classList.toggle('added', isInMyList);
+                if (button.classList.contains('btn-mylist-mobile')) {
+                    button.innerHTML = `${addListIcon} My List`;
+                } else {
+                    button.innerHTML = addListIcon;
+                }
+            });
         }
 
         function createPosterCard(item, mediaType) {
@@ -58,86 +104,187 @@
             return posterElement;
         }
 
-        async function fetchAndPopulateHoverCard(card) {
-            if (card.dataset.detailsLoaded === 'true') return;
-            card.dataset.detailsLoaded = 'true';
-
-            const mediaType = card.dataset.type;
-            const itemId = card.dataset.id;
-            const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
-            const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}&append_to_response=content_ratings`;
-
-            const data = await fetchData(url);
-            if (!data) return;
-
-            const hoverDetailsContainer = card.querySelector('.hover-card-details');
-
-            const releaseYear = (data.release_date || data.first_air_date || '').substring(0, 4);
-            const runtime = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : null);
-            const formattedRuntime = runtime ? `${Math.floor(runtime / 60)}h ${runtime % 60}m` : '';
-            const overview = data.overview.length > 150 ? data.overview.substring(0, 150) + '...' : data.overview;
-
-            let rating = 'NR';
-            if (data.content_ratings?.results) {
-                const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
-                if (usRating) rating = usRating.rating;
+        function findCachedItem(mediaType, itemId) {
+            const collections = [MY_LIST_CACHE, LIKED_LIST_CACHE, TRAILERS_WATCHED_CACHE];
+            for (const list of collections) {
+                if (!Array.isArray(list)) continue;
+                const found = list.find(entry => String(entry.id) === String(itemId) && entry.media_type === mediaType);
+                if (found) return found;
             }
+            return null;
+        }
 
-            const genreTags = data.genres.slice(0, 3).map(g => `<span>${g.name}</span>`).join('');
-
-            const likedList = getStorageData(STORAGE_KEYS.LIKED_LIST);
-            const isLiked = likedList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
-            const likedClass = isLiked ? 'liked' : '';
-
-            const myList = getStorageData(STORAGE_KEYS.MY_LIST);
-            const isInMyList = myList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
-            const addedClass = isInMyList ? 'added' : '';
-            const addListIcon = isInMyList ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>' : '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
-
-            hoverDetailsContainer.innerHTML = `
-                <div class="hover-card-media" style="background-image: url('${backdropBaseUrl}${data.backdrop_path}')"></div>
+        function renderHoverFallback(container, title) {
+            container.innerHTML = `
                 <div class="hover-card-body">
-                    <div class="hover-action-buttons">
-                        <a href="${playerUrl}" class="action-btn play-btn js-play-trigger" title="Play"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"></path></svg></a>
-                        <button class="action-btn add-list-btn ${addedClass}" title="Add to My List" onclick="addToMyList('${itemId}', '${mediaType}', this)">${addListIcon}</button>
-                        <button class="action-btn like-btn ${likedClass}" title="Like" onclick="addToLikedList('${itemId}', '${mediaType}', this)"><svg viewBox="0 0 24 24"><path d="M23,10C23,8.89,22.1,8,21,8H14.68L15.64,3.43C15.66,3.33,15.67,3.22,15.67,3.11C15.67,2.7,15.5,2.32,15.23,2.05L14.17,1L7.59,7.59C7.22,7.95,7,8.45,7,9V19A2,2 0 0,0 9,21H18C18.83,21,19.54,20.5,19.84,19.78L22.86,12.73C22.95,12.5,23,12.26,23,12V10M1,21H5V9H1V21Z"></path></svg></button>
-                        <button class="action-btn more-info-btn" title="More Info" data-id="${itemId}" data-type="${mediaType}"><svg viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"></path></svg></button>
-                    </div>
-                    <p class="hover-card-overview">${overview}</p>
+                    <p class="hover-card-overview">Preview unavailable right now.</p>
                     <div class="hover-card-meta">
-                        <span class="meta-rating">${rating}</span>
-                        <span class="meta-year">${releaseYear}</span>
-                        <span class="meta-runtime">${formattedRuntime}</span>
+                        <span class="meta-year">${title ? title : 'Try again later'}</span>
                     </div>
-                    <div class="hover-card-genres">${genreTags}</div>
                 </div>
             `;
         }
 
+        async function fetchAndPopulateHoverCard(card) {
+            if (!card || card.dataset.detailsLoaded === 'true') return;
+            card.dataset.detailsLoaded = 'true';
+
+            const mediaType = (card.dataset.type || '').toLowerCase();
+            const itemId = card.dataset.id;
+            const hoverDetailsContainer = card.querySelector('.hover-card-details');
+            const fallbackTitle = card.querySelector('img')?.alt || 'Preview unavailable';
+            if (!hoverDetailsContainer || !mediaType || !itemId) {
+                card.dataset.detailsLoaded = '';
+                if (hoverDetailsContainer) {
+                    renderHoverFallback(hoverDetailsContainer, fallbackTitle);
+                }
+                return;
+            }
+
+            const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
+            const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}&append_to_response=content_ratings`;
+
+            try {
+                let cachedReference = findCachedItem(mediaType, itemId);
+                let data = cachedReference;
+                if (!data) {
+                    data = await fetchData(url);
+                } else {
+                    const needsRefresh = !Array.isArray(data.genres) || !data.overview || !data.backdrop_path;
+                    if (needsRefresh) {
+                        const refreshed = await fetchData(url);
+                        if (refreshed) {
+                            Object.assign(data, refreshed);
+                        }
+                    }
+                }
+
+                if (!data) {
+                    card.dataset.detailsLoaded = '';
+                    renderHoverFallback(hoverDetailsContainer, fallbackTitle);
+                    return;
+                }
+
+                const normalized = normalizeMediaItem({ ...data, media_type: data.media_type || mediaType, id: data.id || itemId });
+                if (!normalized) {
+                    card.dataset.detailsLoaded = '';
+                    renderHoverFallback(hoverDetailsContainer, fallbackTitle);
+                    return;
+                }
+
+                const cacheKey = `${normalized.media_type}:${normalized.id}`;
+                MEDIA_DETAILS_CACHE.set(cacheKey, { ...normalized });
+                if (cachedReference) {
+                    Object.assign(cachedReference, normalized);
+                    data = cachedReference;
+                } else {
+                    data = normalized;
+                }
+
+                const releaseYear = (data.release_date || data.first_air_date || '').substring(0, 4);
+                const runtime = data.runtime || (Array.isArray(data.episode_run_time) ? data.episode_run_time[0] : null);
+                const formattedRuntime = runtime ? `${Math.floor(runtime / 60)}h ${runtime % 60}m` : '';
+                const overviewSource = typeof data.overview === 'string' ? data.overview.trim() : '';
+                const overviewText = overviewSource || 'Preview unavailable right now.';
+                const overview = overviewText.length > 150 ? `${overviewText.substring(0, 150)}...` : overviewText;
+
+                let rating = 'NR';
+                if (data.content_ratings?.results) {
+                    const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                    if (usRating?.rating) rating = usRating.rating;
+                }
+
+                const genres = Array.isArray(data.genres) ? data.genres : [];
+                const genreTags = genres.slice(0, 3).map(g => `<span>${g.name}</span>`).join('');
+
+                const likedList = LIKED_LIST_CACHE || [];
+                const isLiked = likedList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
+                const likedClass = isLiked ? 'liked' : '';
+
+                const myList = MY_LIST_CACHE || [];
+                const isInMyList = myList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
+                const addedClass = isInMyList ? 'added' : '';
+                const addListIcon = isInMyList
+                    ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>'
+                    : '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
+
+                const backdropPath = data.backdrop_path || data.poster_path || '';
+                const backdropUrl = backdropPath.startsWith('http') ? backdropPath : (backdropPath ? `${backdropBaseUrl}${backdropPath}` : '');
+
+                hoverDetailsContainer.innerHTML = `
+                    <div class="hover-card-media"${backdropUrl ? ` style="background-image: url('${backdropUrl}')"` : ''}></div>
+                    <div class="hover-card-body">
+                        <div class="hover-action-buttons">
+                            <a href="${playerUrl}" class="action-btn play-btn js-play-trigger" title="Play"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"></path></svg></a>
+                            <button class="action-btn add-list-btn ${addedClass}" title="Add to My List" data-id="${itemId}" data-type="${mediaType}" onclick="addToMyList('${itemId}', '${mediaType}', this)">${addListIcon}</button>
+                            <button class="action-btn like-btn ${likedClass}" title="Like" data-id="${itemId}" data-type="${mediaType}" onclick="addToLikedList('${itemId}', '${mediaType}', this)"><svg viewBox="0 0 24 24"><path d="M23,10C23,8.89,22.1,8,21,8H14.68L15.64,3.43C15.66,3.33,15.67,3.22,15.67,3.11C15.67,2.7,15.5,2.32,15.23,2.05L14.17,1L7.59,7.59C7.22,7.95,7,8.45,7,9V19A2,2 0 0,0 9,21H18C18.83,21,19.54,20.5,19.84,19.78L22.86,12.73C22.95,12.5,23,12.26,23,12V10M1,21H5V9H1V21Z"></path></svg></button>
+                            <button class="action-btn more-info-btn" title="More Info" data-id="${itemId}" data-type="${mediaType}"><svg viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"></path></svg></button>
+                        </div>
+                        <p class="hover-card-overview">${overview}</p>
+                        <div class="hover-card-meta">
+                            <span class="meta-rating">${rating}</span>
+                            <span class="meta-year">${releaseYear}</span>
+                            <span class="meta-runtime">${formattedRuntime}</span>
+                        </div>
+                        <div class="hover-card-genres">${genreTags}</div>
+                    </div>
+                `;
+                updateAllButtons(normalized.id, normalized.media_type);
+            } catch (error) {
+                console.error('Failed to populate hover card', error);
+                card.dataset.detailsLoaded = '';
+                renderHoverFallback(hoverDetailsContainer, fallbackTitle);
+            }
+        }
+
+        function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+            if (typeof AbortController === 'undefined') {
+                return fetch(url, options);
+            }
+            return new Promise((resolve, reject) => {
+                const controller = new AbortController();
+                const id = setTimeout(() => { controller.abort(); reject(new Error('timeout')); }, timeoutMs);
+                fetch(url, { ...options, signal: controller.signal })
+                    .then(res => { clearTimeout(id); resolve(res); })
+                    .catch(err => { clearTimeout(id); reject(err); });
+            });
+        }
+
         async function fetchData(url) {
             try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const response = await fetchWithTimeout(url, {}, 8000);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return await response.json();
             } catch (error) {
-                console.error('Error fetching data:', error);
+                console.warn('Fetch failed:', url, error.message);
                 return null;
             }
         }
 
-        function populateGrid(gridId, dataList) {
+        function populateGrid(gridId, dataList = []) {
             const grid = document.getElementById(gridId);
+            if (!grid) return;
+
             grid.innerHTML = '';
-            if (dataList.length > 0) {
-                dataList.forEach(item => {
-                    const card = createPosterCard(item, item.media_type);
-                    if (card) grid.appendChild(card);
-                });
-            } else {
-                // Show empty state message
-                const emptyMessage = createEmptyStateMessage(gridId);
-                grid.appendChild(emptyMessage);
+            if (!Array.isArray(dataList) || dataList.length === 0) {
+                grid.appendChild(createEmptyStateMessage(gridId));
+                return;
             }
+
+            let renderedCount = 0;
+            dataList.forEach(item => {
+                const card = createPosterCard(item, item.media_type);
+                if (card) {
+                    grid.appendChild(card);
+                    renderedCount += 1;
+                }
+            });
+
+            if (renderedCount === 0) {
+                grid.appendChild(createEmptyStateMessage(gridId));
+            }
+
+            observeGridCards(grid);
         }
 
         function createEmptyStateMessage(gridId) {
@@ -197,86 +344,196 @@
             return emptyDiv;
         }
 
-        function displayMyList() {
-            const myList = getStorageData(STORAGE_KEYS.MY_LIST);
-            populateGrid('my-list-grid', myList);
+        function resolveMediaIdentifiers(item) {
+            if (!item) return { id: undefined, mediaType: undefined };
+            const id = item.id || item.tmdb_id;
+            const inferredType = item.media_type || (item.title ? 'movie' : item.name ? 'tv' : '');
+            const mediaType = (inferredType || '').toLowerCase();
+            return { id, mediaType };
         }
 
-        function displayTrailersWatched() {
-            const trailersWatched = getStorageData(STORAGE_KEYS.TRAILERS_WATCHED);
-            populateGrid('trailers-watched-grid', trailersWatched);
+        // Prefetch hover details when cards enter viewport (like main page feel)
+        let hoverObserver;
+        function ensureHoverObserver() {
+            if (hoverObserver) return hoverObserver;
+            if (typeof IntersectionObserver === 'undefined') return null;
+            hoverObserver = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const card = entry.target;
+                        if (card && !card.dataset.detailsLoaded) fetchAndPopulateHoverCard(card);
+                        hoverObserver.unobserve(card);
+                    }
+                });
+            }, { rootMargin: '200px' });
+            return hoverObserver;
         }
 
-        function displayLikedList() {
-            const likedList = getStorageData(STORAGE_KEYS.LIKED_LIST);
-            populateGrid('liked-grid', likedList);
+        function observeGridCards(grid) {
+            const obs = ensureHoverObserver();
+            if (!obs) return;
+            grid.querySelectorAll('.poster-card').forEach(card => obs.observe(card));
+        }
+
+        function normalizeMediaItem(rawItem) {
+            if (!rawItem) return null;
+            const clone = { ...rawItem };
+            const { id, mediaType } = resolveMediaIdentifiers(clone);
+            if (!id || !mediaType) return null;
+            clone.id = id;
+            clone.media_type = mediaType;
+            return clone;
+        }
+
+        function normalizeCollection(items) {
+            if (!Array.isArray(items) || items.length === 0) return [];
+            const seenKeys = new Set();
+            const normalized = [];
+            items.forEach(item => {
+                const normalizedItem = normalizeMediaItem(item);
+                if (!normalizedItem) return;
+                const key = `${normalizedItem.media_type}:${normalizedItem.id}`;
+                if (seenKeys.has(key)) return;
+                seenKeys.add(key);
+                normalized.push(normalizedItem);
+            });
+            return normalized;
+        }
+
+        async function hydrateMediaItem(item) {
+            const hydrated = normalizeMediaItem(item);
+            if (!hydrated) return null;
+            const { id, media_type: mediaType } = hydrated;
+
+            if (!id || !mediaType || hydrated.poster_path) {
+                return hydrated;
+            }
+
+            const cacheKey = `${mediaType}:${id}`;
+            let fresh = MEDIA_DETAILS_CACHE.get(cacheKey);
+            if (!fresh) {
+                fresh = await fetchData(`https://api.themoviedb.org/3/${mediaType}/${id}?api_key=${apiKey}`);
+                if (fresh) {
+                    fresh.id = id;
+                    fresh.media_type = mediaType;
+                    MEDIA_DETAILS_CACHE.set(cacheKey, fresh);
+                }
+            }
+
+            if (fresh) {
+                if (!hydrated.poster_path && fresh.poster_path) hydrated.poster_path = fresh.poster_path;
+                if (!hydrated.backdrop_path && fresh.backdrop_path) hydrated.backdrop_path = fresh.backdrop_path;
+                if (!hydrated.overview && fresh.overview) hydrated.overview = fresh.overview;
+                if (!hydrated.title && fresh.title) hydrated.title = fresh.title;
+                if (!hydrated.name && fresh.name) hydrated.name = fresh.name;
+            }
+
+            return hydrated;
+        }
+
+        async function hydrateItemCollection(items) {
+            if (!Array.isArray(items) || items.length === 0) return [];
+            const hydrated = await Promise.all(items.map(item => hydrateMediaItem(item)));
+            return hydrated.filter(Boolean);
+        }
+
+        async function displayMyList() {
+            const hydrated = await hydrateItemCollection(MY_LIST_CACHE || []);
+            MY_LIST_CACHE = hydrated;
+            cacheWrite(CACHE_KEYS.MY_LIST, MY_LIST_CACHE);
+            populateGrid('my-list-grid', hydrated);
+        }
+
+        async function displayTrailersWatched() {
+            const hydrated = await hydrateItemCollection(TRAILERS_WATCHED_CACHE || []);
+            TRAILERS_WATCHED_CACHE = hydrated;
+            cacheWrite(CACHE_KEYS.TRAILERS, TRAILERS_WATCHED_CACHE);
+            populateGrid('trailers-watched-grid', hydrated);
+        }
+
+        async function displayLikedList() {
+            const hydrated = await hydrateItemCollection(LIKED_LIST_CACHE || []);
+            LIKED_LIST_CACHE = hydrated;
+            cacheWrite(CACHE_KEYS.LIKES, LIKED_LIST_CACHE);
+            populateGrid('liked-grid', hydrated);
         }
 
         async function addTrailerToWatched(itemId, mediaType) {
             const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}`;
             const itemData = await fetchData(url);
             if (itemData) {
-                let trailersWatched = getStorageData(STORAGE_KEYS.TRAILERS_WATCHED);
-                const exists = trailersWatched.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
+                const normalizedItem = normalizeMediaItem({ ...itemData, media_type: mediaType });
+                if (!normalizedItem) return;
+                const trailersWatched = TRAILERS_WATCHED_CACHE || [];
+                const exists = trailersWatched.some(item => item.id == normalizedItem.id && item.media_type === normalizedItem.media_type);
                 if (!exists) {
-                    itemData.media_type = mediaType;
-                    trailersWatched.unshift(itemData);
-                    setStorageData(STORAGE_KEYS.TRAILERS_WATCHED, trailersWatched);
-                    displayTrailersWatched();
+                    try { await apiSend('/api/me/trailers', 'POST', { tmdb_id: normalizedItem.id, media_type: normalizedItem.media_type, data: normalizedItem }); } catch(e) { /* ignore */ }
+                    TRAILERS_WATCHED_CACHE = [normalizedItem, ...trailersWatched];
+                    await displayTrailersWatched();
                 }
             }
         }
 
         async function addToMyList(itemId, mediaType, buttonElement) {
             const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}`;
-            const data = await fetchData(url);
-            if (!data) {
+            const rawData = await fetchData(url);
+            if (!rawData) {
                 showToast('Error adding to My List');
                 return;
             }
-            let myList = getStorageData(STORAGE_KEYS.MY_LIST);
-            const existsIndex = myList.findIndex(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
+            const normalizedItem = normalizeMediaItem({ ...rawData, media_type: mediaType });
+            if (!normalizedItem) {
+                showToast('Error adding to My List');
+                return;
+            }
+            const displayTitle = rawData.title || rawData.name;
+            let myList = MY_LIST_CACHE || [];
+            const existsIndex = myList.findIndex(item => item.id == normalizedItem.id && item.media_type === normalizedItem.media_type);
 
             if (existsIndex > -1) {
+                try { await apiSend('/api/me/my-list', 'DELETE', { tmdb_id: normalizedItem.id, media_type: normalizedItem.media_type }); } catch(e) { /* ignore */ }
                 myList.splice(existsIndex, 1);
-                setStorageData(STORAGE_KEYS.MY_LIST, myList);
-                buttonElement.classList.remove('added');
-                buttonElement.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
-                showToast(`Removed "${data.title || data.name}" from My List`);
+                MY_LIST_CACHE = myList;
+                showToast(`Removed "${displayTitle}" from My List`);
             } else {
-                data.media_type = mediaType;
-                myList.unshift(data);
-                setStorageData(STORAGE_KEYS.MY_LIST, myList);
-                buttonElement.classList.add('added');
-                buttonElement.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>';
-                showToast(`Added "${data.title || data.name}" to My List`);
+                try { await apiSend('/api/me/my-list', 'POST', { tmdb_id: normalizedItem.id, media_type: normalizedItem.media_type, data: normalizedItem }); } catch(e) { /* ignore */ }
+                myList.unshift(normalizedItem);
+                MY_LIST_CACHE = myList;
+                showToast(`Added "${displayTitle}" to My List`);
             }
-            displayMyList();
+            await displayMyList();
+            updateAllButtons(normalizedItem.id, normalizedItem.media_type);
         }
 
         async function addToLikedList(itemId, mediaType, buttonElement) {
             const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}`;
-            const data = await fetchData(url);
-            if (!data) {
+            const rawData = await fetchData(url);
+            if (!rawData) {
                 showToast('Error updating Liked List');
                 return;
             }
-            let likedList = getStorageData(STORAGE_KEYS.LIKED_LIST);
-            const existsIndex = likedList.findIndex(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
+            const normalizedItem = normalizeMediaItem({ ...rawData, media_type: mediaType });
+            if (!normalizedItem) {
+                showToast('Error updating Liked List');
+                return;
+            }
+            const displayTitle = rawData.title || rawData.name;
+            let likedList = LIKED_LIST_CACHE || [];
+            const existsIndex = likedList.findIndex(item => item.id == normalizedItem.id && item.media_type === normalizedItem.media_type);
 
             if (existsIndex > -1) {
+                try { await apiSend('/api/me/likes', 'DELETE', { tmdb_id: normalizedItem.id, media_type: normalizedItem.media_type }); } catch(e) { /* ignore */ }
                 likedList.splice(existsIndex, 1);
-                setStorageData(STORAGE_KEYS.LIKED_LIST, likedList);
-                buttonElement.classList.remove('liked');
-                showToast(`Removed "${data.title || data.name}" from Liked List`);
+                LIKED_LIST_CACHE = likedList;
+                showToast(`Removed "${displayTitle}" from Liked List`);
             } else {
-                data.media_type = mediaType;
-                likedList.unshift(data);
-                setStorageData(STORAGE_KEYS.LIKED_LIST, likedList);
-                buttonElement.classList.add('liked');
-                showToast(`Added "${data.title || data.name}" to Liked List`);
+                try { await apiSend('/api/me/likes', 'POST', { tmdb_id: normalizedItem.id, media_type: normalizedItem.media_type, data: normalizedItem }); } catch(e) { /* ignore */ }
+                likedList.unshift(normalizedItem);
+                LIKED_LIST_CACHE = likedList;
+                showToast(`Added "${displayTitle}" to Liked List`);
             }
-            displayLikedList();
+            await displayLikedList();
+            updateAllButtons(normalizedItem.id, normalizedItem.media_type);
         }
 
         // --- PLAYER MODAL LOGIC ---
@@ -284,7 +541,31 @@
             const playerModal = document.getElementById('player-modal');
             const playerContainer = document.getElementById('player-container');
             if (playerContainer && playerModal) {
-                playerContainer.innerHTML = `<iframe src="${url}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                playerContainer.innerHTML = '';
+                const loader = document.createElement('div');
+                loader.className = 'loader';
+                loader.style.position = 'absolute';
+                loader.style.left = '50%';
+                loader.style.top = '50%';
+                loader.style.transform = 'translate(-50%, -50%)';
+                playerContainer.appendChild(loader);
+
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                iframe.allow = 'autoplay; fullscreen';
+                iframe.allowFullscreen = true;
+                iframe.onload = () => { loader.remove(); };
+                iframe.onerror = () => {
+                    loader.remove();
+                    const fallback = document.createElement('div');
+                    fallback.style.color = '#fff';
+                    fallback.style.textAlign = 'center';
+                    fallback.style.paddingTop = '20vh';
+                    fallback.innerHTML = `Player failed to load. <a style="color:#fff;text-decoration:underline" href="${url}" target="_blank">Open in new tab</a>`;
+                    playerContainer.appendChild(fallback);
+                };
+                playerContainer.appendChild(iframe);
+
                 playerModal.classList.add('active');
                 document.body.classList.add('modal-open');
             }
@@ -306,13 +587,38 @@
             document.body.classList.add('modal-open');
             const infoModal = document.getElementById('info-modal');
             infoModal.classList.add('active');
-            infoModal.innerHTML = `<div class="modal-backdrop"></div><div style="position:relative; z-index:1;"><div class="loader"></div></div>`;
+            // Quick skeleton with Play button
+            const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
+            infoModal.innerHTML = `
+                <div class="modal-backdrop"></div>
+                <div class="modal-content-wrapper">
+                    <button class="modal-close-btn">&times;</button>
+                    <div class="modal-media-container">
+                        <div class="loader" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)"></div>
+                        <div class="modal-content-overlay">
+                            <h2 class="modal-title">Loading...</h2>
+                            <div class="modal-action-buttons">
+                                <a href="${playerUrl}" class="modal-play-btn js-play-trigger"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z" fill="currentColor"></path></svg>Play</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="modal-metadata-row"></div>
+                        <div class="modal-main-content-grid">
+                            <div class="modal-description"><p></p></div>
+                            <aside class="modal-meta-data"></aside>
+                        </div>
+                    </div>
+                </div>`;
 
             const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}&append_to_response=videos,content_ratings,credits`;
             const data = await fetchData(url);
 
             if (!data) {
-                infoModal.innerHTML = '<p>Could not load details.</p>';
+                const mediaContainer = infoModal.querySelector('.modal-media-container');
+                mediaContainer.style.background = '#000';
+                const titleEl = infoModal.querySelector('.modal-title');
+                if (titleEl) titleEl.textContent = 'Details unavailable';
                 return;
             }
 
@@ -341,18 +647,18 @@
             const addIcon = `<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>`;
             const likeIcon = `<svg viewBox="0 0 24 24"><path d="M23,10C23,8.89,22.1,8,21,8H14.68L15.64,3.43C15.66,3.33,15.67,3.22,15.67,3.11C15.67,2.7,15.5,2.32,15.23,2.05L14.17,1L7.59,7.59C7.22,7.95,7,8.45,7,9V19A2,2 0 0,0 9,21H18C18.83,21,19.54,20.5,19.84,19.78L22.86,12.73C22.95,12.5,23,12.26,23,12V10M1,21H5V9H1V21Z"></path></svg>`;
 
-            const likedList = getStorageData(STORAGE_KEYS.LIKED_LIST);
+            const likedList = LIKED_LIST_CACHE || [];
             const isLiked = likedList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
             const likedClass = isLiked ? 'liked' : '';
 
-            const myList = getStorageData(STORAGE_KEYS.MY_LIST);
+            const myList = MY_LIST_CACHE || [];
             const isInMyList = myList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
             const addedClass = isInMyList ? 'added' : '';
             const addListIcon = isInMyList ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>' : '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>';
 
-            infoModal.innerHTML = `
-                <div class="modal-backdrop"></div>
-                <div class="modal-content-wrapper">
+            const wrapper = infoModal.querySelector('.modal-content-wrapper');
+            if (wrapper) {
+                wrapper.innerHTML = `
                     <button class="modal-close-btn">&times;</button>
                     <div class="modal-media-container" ${backgroundStyle}>
                         ${mediaContent}
@@ -379,9 +685,8 @@
                                 <p><span class="label">Genres:</span> <span class="value">${genres}</span></p>
                             </aside>
                         </div>
-                    </div>
-                </div>
-            `;
+                    </div>`;
+            }
         }
 
         function closeInfoModal() {
@@ -392,15 +697,74 @@
         }
 
         // --- EVENT LISTENERS ---
-        document.addEventListener('DOMContentLoaded', function () {
-            displayMyList();
-            displayTrailersWatched();
-            displayLikedList();
+        document.addEventListener('DOMContentLoaded', async function () {
+            const seedMy = normalizeCollection(SERVER_SEED.myList);
+            const seedLikes = normalizeCollection(SERVER_SEED.likes);
+            const seedTrailers = normalizeCollection(SERVER_SEED.trailers);
+
+            if (seedMy.length) MY_LIST_CACHE = seedMy;
+            if (seedLikes.length) LIKED_LIST_CACHE = seedLikes;
+            if (seedTrailers.length) TRAILERS_WATCHED_CACHE = seedTrailers;
+
+            const cachedMy = normalizeCollection(cacheRead(CACHE_KEYS.MY_LIST));
+            const cachedLikes = normalizeCollection(cacheRead(CACHE_KEYS.LIKES));
+            const cachedTrailers = normalizeCollection(cacheRead(CACHE_KEYS.TRAILERS));
+
+            if (!MY_LIST_CACHE.length && cachedMy.length) MY_LIST_CACHE = cachedMy;
+            if (!LIKED_LIST_CACHE.length && cachedLikes.length) LIKED_LIST_CACHE = cachedLikes;
+            if (!TRAILERS_WATCHED_CACHE.length && cachedTrailers.length) TRAILERS_WATCHED_CACHE = cachedTrailers;
+
+            await Promise.all([
+                displayMyList(),
+                displayTrailersWatched(),
+                displayLikedList()
+            ]);
+
+            try {
+                const responses = await Promise.allSettled([
+                    apiGet('/api/me/my-list'),
+                    apiGet('/api/me/likes'),
+                    apiGet('/api/me/trailers')
+                ]);
+
+                if (responses[0].status === 'fulfilled') {
+                    MY_LIST_CACHE = normalizeCollection(responses[0].value || []);
+                } else if (responses[0].status === 'rejected') {
+                    console.warn('Failed to refresh My List from server', responses[0].reason);
+                }
+
+                if (responses[1].status === 'fulfilled') {
+                    LIKED_LIST_CACHE = normalizeCollection(responses[1].value || []);
+                } else if (responses[1].status === 'rejected') {
+                    console.warn('Failed to refresh Likes from server', responses[1].reason);
+                }
+
+                if (responses[2].status === 'fulfilled') {
+                    TRAILERS_WATCHED_CACHE = normalizeCollection(responses[2].value || []);
+                } else if (responses[2].status === 'rejected') {
+                    console.warn('Failed to refresh Trailers from server', responses[2].reason);
+                }
+
+                await Promise.all([
+                    displayMyList(),
+                    displayTrailersWatched(),
+                    displayLikedList()
+                ]);
+            } catch (e) {
+                console.warn('Failed to refresh user data from server', e);
+            }
+
             setupNavFiltering();
             setupSearch();
         });
 
         document.addEventListener('mouseenter', (event) => {
+            const card = event.target.closest('.poster-card');
+            if (card) fetchAndPopulateHoverCard(card);
+        }, true);
+
+        // Ensure hover population fires across browsers
+        document.addEventListener('mouseover', (event) => {
             const card = event.target.closest('.poster-card');
             if (card) fetchAndPopulateHoverCard(card);
         }, true);
