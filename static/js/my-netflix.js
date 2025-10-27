@@ -628,7 +628,6 @@
             const overview = data.overview;
             const cast = data.credits?.cast.slice(0, 3).map(c => c.name).join(', ') + ', more';
             const genres = data.genres.map(g => g.name).join(', ');
-            const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
 
             let rating = '';
             if (data.content_ratings?.results) {
