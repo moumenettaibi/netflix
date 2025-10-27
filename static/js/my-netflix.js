@@ -14,17 +14,51 @@
             return (typeof window !== 'undefined' && window.__MY_NETFLIX_INITIAL__) ? window.__MY_NETFLIX_INITIAL__ : {};
         })();
 
+        // Get user ID for user-specific caching
+        const USER_ID = (() => {
+            try {
+                const el = document.getElementById('user-id-data');
+                return el ? el.textContent.trim() : 'default';
+            } catch (e) {
+                return 'default';
+            }
+        })();
+
         // In-memory caches loaded from server
         let MY_LIST_CACHE = [];
         let LIKED_LIST_CACHE = [];
         let TRAILERS_WATCHED_CACHE = [];
 
-        // Persistent browser cache for fast startup
+        // Persistent browser cache for fast startup (user-specific)
         const CACHE_KEYS = {
-            MY_LIST: 'srv_my_list_v1',
-            LIKES: 'srv_likes_v1',
-            TRAILERS: 'srv_trailers_v1'
+            MY_LIST: `srv_my_list_v1_${USER_ID}`,
+            LIKES: `srv_likes_v1_${USER_ID}`,
+            TRAILERS: `srv_trailers_v1_${USER_ID}`
         };
+
+        // Clean up caches from other users
+        function cleanupOldCaches() {
+            try {
+                const keysToClean = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('srv_my_list_v1_') || key.startsWith('srv_likes_v1_') || key.startsWith('srv_trailers_v1_'))) {
+                        // If this cache key doesn't belong to current user, mark it for deletion
+                        if (!key.endsWith(`_${USER_ID}`)) {
+                            keysToClean.push(key);
+                        }
+                    }
+                }
+                // Remove old user caches
+                keysToClean.forEach(key => localStorage.removeItem(key));
+                if (keysToClean.length > 0) {
+                    console.log(`Cleaned up ${keysToClean.length} old cache entries`);
+                }
+            } catch (e) {
+                console.warn('Could not clean up old caches:', e);
+            }
+        }
+
         const MEDIA_DETAILS_CACHE = new Map();
         function cacheWrite(key, data) {
             try { localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
@@ -695,30 +729,28 @@
             infoModal.innerHTML = '';
         }
 
+        // --- LOGOUT FUNCTIONALITY ---
+        async function logout() {
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    showToast('Logout failed');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showToast('Logout failed');
+            }
+        }
+
         // --- EVENT LISTENERS ---
         document.addEventListener('DOMContentLoaded', async function () {
-            const seedMy = normalizeCollection(SERVER_SEED.myList);
-            const seedLikes = normalizeCollection(SERVER_SEED.likes);
-            const seedTrailers = normalizeCollection(SERVER_SEED.trailers);
-
-            if (seedMy.length) MY_LIST_CACHE = seedMy;
-            if (seedLikes.length) LIKED_LIST_CACHE = seedLikes;
-            if (seedTrailers.length) TRAILERS_WATCHED_CACHE = seedTrailers;
-
-            const cachedMy = normalizeCollection(cacheRead(CACHE_KEYS.MY_LIST));
-            const cachedLikes = normalizeCollection(cacheRead(CACHE_KEYS.LIKES));
-            const cachedTrailers = normalizeCollection(cacheRead(CACHE_KEYS.TRAILERS));
-
-            if (!MY_LIST_CACHE.length && cachedMy.length) MY_LIST_CACHE = cachedMy;
-            if (!LIKED_LIST_CACHE.length && cachedLikes.length) LIKED_LIST_CACHE = cachedLikes;
-            if (!TRAILERS_WATCHED_CACHE.length && cachedTrailers.length) TRAILERS_WATCHED_CACHE = cachedTrailers;
-
-            await Promise.all([
-                displayMyList(),
-                displayTrailersWatched(),
-                displayLikedList()
-            ]);
-
+            // Load from server only, no local cache seeding for user lists
             try {
                 const responses = await Promise.allSettled([
                     apiGet('/api/me/my-list'),
@@ -755,6 +787,12 @@
 
             setupNavFiltering();
             setupSearch();
+
+            // Setup logout button
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', logout);
+            }
         });
 
         document.addEventListener('mouseenter', (event) => {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Netflix</title>
+    <title>Netflix - Sign Up</title>
     <style>
         /* --- CSS Reset --- */
         * {
@@ -14,10 +14,12 @@
 
         /* --- Base Styles --- */
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: "Netflix Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
             background-color: #000;
             color: #fff;
             line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         a {
@@ -32,370 +34,495 @@
         /* --- Site Wrapper & Background --- */
         .site-wrapper {
             min-height: 100vh;
-            background-image: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), 
-                              url('https://cdn.mos.cms.futurecdn.net/rDJegQJaCyGaYysj2g5XWY-650-80.jpg.webp');
+            background-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0, rgba(0, 0, 0, 0.4) 60%, rgba(0, 0, 0, 0.9) 100%),
+                              url('https://assets.nflxext.com/ffe/siteui/vlv3/9ba9f0e2-b246-47f4-bd1f-3e84c23a5db8/web/MA-en-20251020-TRIFECTA-perspective_eaf5410f-8168-4425-80ad-91436de5a29e_large.jpg');
             background-size: cover;
             background-position: center;
             display: flex;
             flex-direction: column;
+            border-bottom: 8px solid #222;
         }
 
         /* --- Header --- */
         .site-header {
-            padding: 20px 4%;
-        }
-
-        .logo {
-            fill: #E50914; /* Netflix Red */
-            height: 36px;
-            width: auto;
-        }
-
-        /* --- Main Login Content --- */
-        .login-main {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            padding: 40px 0 80px 0;
-        }
-
-        .login-form-container {
-            background-color: rgba(0, 0, 0, 0.75);
-            border-radius: 4px;
-            padding: 60px 68px 40px 68px;
-            max-width: 450px;
-            width: 90%;
-            min-height: 660px;
-        }
-
-        .login-form-container h1 {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 28px;
-        }
-
-        /* --- Form Elements --- */
-        .login-form input[type="text"],
-        .login-form input[type="password"] {
-            width: 100%;
-            height: 50px;
-            background-color: rgba(51, 51, 51, 0.7); /* Changed from #333 to be transparent */
-            border: none;
-            border-radius: 4px;
-            padding: 16px 20px;
-            color: #fff;
-            font-size: 16px;
-            margin-bottom: 16px;
-        }
-
-        .login-form input[type="text"]::placeholder,
-        .login-form input[type="password"]::placeholder {
-            color: #8c8c8c;
-        }
-
-        .btn {
-            width: 100%;
-            height: 50px;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-signin {
-            background-color: #E50914;
-            color: #fff;
-            margin-top: 24px;
-            margin-bottom: 12px;
-        }
-
-        .or-divider {
-            text-align: center;
-            color: #b3b3b3;
-            font-size: 14px;
-            margin: 16px 0;
-        }
-
-        .btn-code {
-            background-color: rgba(70, 70, 70, 0.7);
-            color: #fff;
-            border: 1px solid rgba(128, 128, 128, 0.7);
-        }
-        
-        .btn-code:hover {
-            background-color: rgba(90, 90, 90, 0.7);
-        }
-
-        .forgot-password {
-            display: block;
-            text-align: center;
-            color: #b3b3b3;
-            font-size: 14px;
-            margin-top: 16px;
-        }
-
-        .forgot-password:hover {
-            color: #fff;
-        }
-
-        /* --- Form Options & reCAPTCHA --- */
-        .login-options {
+            padding: 26px 56px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: #b3b3b3;
-            font-size: 14px;
-            margin-top: 12px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
         }
-        
-        .remember-me {
+
+        .logo {
+            fill: #E50914;
+            height: 36px;
+            width: 134px;
+        }
+
+        .btn-signin-header {
+            background-color: #E50914;
+            color: #fff;
+            padding: 7px 17px;
+            border-radius: 3px;
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: normal;
+        }
+        .btn-signin-header:hover {
+            background-color: #c11119;
+            text-decoration: none;
+        }
+
+        /* --- Main Signup Hero Content --- */
+        .signup-hero {
+            flex-grow: 1;
             display: flex;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            text-align: center;
+            padding: 75px 5% 120px 5%;
+            margin-top: 80px;
+        }
+
+        .signup-hero h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.1;
+        }
+
+        .signup-hero h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin: 1rem auto;
+        }
+
+        .signup-hero h3 {
+            font-size: 1.25rem;
+            font-weight: 400;
+            padding: 0 5%;
+            margin: 0 auto 20px auto;
+            max-width: 800px;
+        }
+
+        .email-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 950px;
+            margin: 0 auto;
+        }
+
+        .email-form-group {
+             display: flex;
+             flex-direction: column;
+             align-items: stretch;
+             width: 100%;
+             max-width: 500px;
+             gap: 16px;
+        }
+
+        .input-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .email-form input[type="email"],
+        .email-form input[type="password"] {
+            width: 100%;
+            height: 60px;
+            padding: 20px 10px 10px 10px;
+            font-size: 1rem;
+            border: 1px solid #8c8c8c;
+            border-radius: 4px;
+            background-color: rgba(22, 22, 22, 0.7);
+            color: #fff;
+        }
+
+        .email-form input[type="email"]:focus,
+        .email-form input[type="password"]:focus,
+        .email-form input[type="email"]:not(:placeholder-shown),
+        .email-form input[type="password"]:not(:placeholder-shown) {
+            border-color: #fff;
+            outline: none;
+            background-color: rgba(22, 22, 22, 0.8);
+         }
+
+        /* Floating label effect */
+        .email-form label {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8c8c8c;
+            font-size: 1rem;
+            pointer-events: none;
+            transition: all 0.15s ease-out;
+        }
+
+        .email-form input[type="email"]:focus + label,
+        .email-form input[type="password"]:focus + label,
+        .email-form input[type="email"]:not(:placeholder-shown) + label,
+        .email-form input[type="password"]:not(:placeholder-shown) + label {
+            top: 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .btn-get-started {
+            background-color: #E50914;
+            color: #fff;
+            font-size: 1.625rem;
+            font-weight: 500;
+            padding: 12px 1.5em;
+            border-radius: 4px;
+            border: none;
             cursor: pointer;
+            height: 60px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            width: 100%;
+            margin-top: 8px;
         }
 
-        .remember-me input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            margin-right: 5px;
-            accent-color: #b3b3b3;
+         .btn-get-started:hover {
+            background-color: #f40612;
+            text-decoration: none;
+         }
+
+        .btn-get-started:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
-        .signup-link {
-            margin-top: 16px;
+        .chevron-icon {
+            margin-left: 0.5em;
+            width: 0.75em;
+            height: 0.75em;
+            fill: currentColor;
+            transition: transform 0.2s ease;
+        }
+        .btn-get-started:hover .chevron-icon {
+             transform: translateX(3px);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading .btn-text, .loading .chevron-icon {
+            display: none;
+        }
+
+        .loading .spinner {
+            display: block;
+        }
+
+        /* Messages */
+        #message {
+            color: #ffa00a;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            min-height: 1.2em;
+            text-align: center;
+        }
+         #message.success {
+             color: #4CAF50;
+         }
+
+        .signin-link {
+            margin-top: 24px;
             color: #737373;
-            font-size: 16px;
+            font-size: 1rem;
         }
 
-        .signup-link a {
+        .signin-link a {
             color: #fff;
             font-weight: 500;
         }
 
-        .recaptcha {
-            font-size: 13px;
-            color: #8c8c8c;
-            margin-top: 16px;
-            line-height: 1.5;
-        }
-
-        .recaptcha a {
-            color: #0071eb; /* Blue link from screenshot */
-        }
-
         /* --- Footer --- */
         .site-footer {
-            background-color: #141414; /* Changed from black to a dark gray */
-            padding: 50px 4%;
-            color: #a0a0a0; /* Was #737373 */
-            margin-top: 50px;
+            background-color: rgba(0, 0, 0, 0.75);
+            padding: 70px 4%;
+            color: #737373;
+            margin-top: 0;
+            border-top: 8px solid #222;
         }
- 
+
+        .footer-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
         .footer-top {
-            font-size: 16px;
+            font-size: 1rem;
             margin-bottom: 30px;
         }
-        
+
         .footer-top a {
-            color: #a0a0a0; /* Was #737373 */
+            color: #737373;
         }
- 
+
         .footer-links {
             list-style: none;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 15px;
-            font-size: 13px;
+            font-size: 0.8125rem;
             margin-bottom: 30px;
         }
- 
+
         .footer-links li a {
-            color: #a0a0a0; /* Was #737373 */
+            color: #737373;
         }
- 
-        .language-selector select {
-            background-color: #000;
-            color: #a0a0a0; /* Was #737373 */
-            border: 1px solid #333;
-            padding: 12px 20px;
-            font-size: 14px;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.6 6.5C11.75 6.5 11.82 6.68 11.72 6.78L8.2 10.3C8.08 10.42 7.92 10.42 7.8 10.3L4.28 6.78C4.18 6.68 4.25 6.5 4.4 6.5H11.6Z" fill="%23a0a0a0"/></svg>'); /* Arrow color was #737373 */
-            background-repeat: no-repeat;
-            background-position: right 15px center;
-            padding-right: 40px; /* Space for dropdown arrow */
+
+        .footer-country {
+            margin-top: 24px;
+            font-size: 0.8125rem;
         }
 
         /* --- Responsive Design --- */
-        @media (max-width: 740px) {
-            .login-form-container {
-                padding: 40px 30px;
-                max-width: 100%;
-                min-height: 0;
-            }
+        @media (max-width: 959px) {
+             .signup-hero h1 {
+                 font-size: 2rem;
+             }
+             .signup-hero h2 {
+                 font-size: 1.125rem;
+             }
+             .signup-hero h3 {
+                font-size: 1.125rem;
+             }
+             .email-form-group {
+                 max-width: 450px;
+             }
+             .email-form input[type="email"],
+             .email-form input[type="password"] {
+                 height: 50px;
+             }
 
-            .site-header {
-                padding: 20px;
-            }
-            
-            .logo {
-                height: 28px;
-            }
-            
-            .login-form-container h1 {
-                font-size: 28px;
-            }
-
-            .footer-links {
-                grid-template-columns: repeat(2, 1fr);
-            }
+             .btn-get-started {
+                 font-size: 1.125rem;
+                 padding: 10px 1em;
+                 height: 50px;
+             }
+             .footer-links {
+                 grid-template-columns: repeat(2, 1fr);
+             }
+             .site-header {
+                 padding: 20px 5%;
+             }
         }
-        
-        @media (max-width: 500px) {
-             .site-wrapper {
-                /* On small screens, Netflix often removes the complex background 
-                   but we'll keep it as requested, just ensure form is readable */
-                background-image: none;
+
+        @media (max-width: 599px) {
+            .site-wrapper {
+                 background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
+                              url('https://assets.nflxext.com/ffe/siteui/vlv3/9ba9f0e2-b246-47f4-bd1f-3e84c23a5db8/web/MA-en-20251020-TRIFECTA-perspective_eaf5410f-8168-4425-80ad-91436de5a29e_small.jpg');
+            }
+             .signup-hero {
+                 padding: 50px 5% 80px 5%;
+                 margin-top: 60px;
              }
-             
-             .login-main {
-                 padding: 20px 0 40px 0;
+             .signup-hero h1 {
+                font-size: 1.75rem;
              }
-             
-             .login-form-container {
-                 width: 100%;
-                 padding: 30px 20px;
+             .signup-hero h2, .signup-hero h3 {
+                font-size: 1.125rem;
              }
-             
+
+             .email-form input[type="email"],
+             .email-form input[type="password"],
+             .btn-get-started {
+                 height: 48px;
+                 font-size: 1rem;
+             }
+             .btn-get-started {
+                font-size: 1rem;
+                padding: 10px 1em;
+                height: 48px;
+             }
+             .site-header {
+                 padding: 15px 5%;
+             }
+             .logo {
+                 height: 24px;
+                 width: 89px;
+             }
+             .btn-signin-header {
+                 padding: 4px 8px;
+                 font-size: 0.875rem;
+             }
+             .footer-links {
+                grid-template-columns: repeat(2, 1fr);
+             }
              .site-footer {
-                 padding: 30px 4%;
-                 /* Remove footer background to blend with black body */
-                 background-color: transparent; 
-                 border-top: 1px solid #222;
-                 margin-top: 20px;
+                 padding: 40px 5%;
+                 background-color: #000;
+                 border-top: none;
              }
         }
     </style>
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            try {
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username, password }),
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    window.location.href = result.redirect;
-                } else {
-                    alert(result.message);
-                }
-            } catch (error) {
-                alert('An error occurred. Please try again.');
-            }
-        });
-    </script>
 </head>
 <body>
 
     <div class="site-wrapper">
-        <!-- Header with Netflix Logo -->
+        <!-- Header -->
         <header class="site-header">
-            <a href="#">
-                <!-- Embedded Netflix Logo SVG -->
+            <a href="/signup">
                 <svg class="logo" viewBox="0 0 111 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img">
-                    <g>
-                        <path d="M105.06233,14.2806261 L110.999156,30 C109.249227,29.7497422 107.500234,29.4366857 105.718437,29.1554972 L102.374168,20.4686475 L98.9371075,28.4375293 C97.2499766,28.1563408 95.5928391,28.061674 93.9057081,27.8432843 L99.9372012,14.0931671 L94.4680851,-5.68434189e-14 L99.5313525,-5.68434189e-14 L102.593495,7.87421502 L105.874965,-5.68434189e-14 L110.999156,-5.68434189e-14 L105.06233,14.2806261 Z M90.4686475,-5.68434189e-14 L85.8749649,-5.68434189e-14 L85.8749649,27.2499766 C87.3746368,27.3437061 88.9371075,27.4055675 90.4686475,27.5930265 L90.4686475,-5.68434189e-14 Z M81.9055207,26.93692 C77.7186241,26.6557316 73.5307901,26.4064111 69.250164,26.3117443 L69.250164,-5.68434189e-14 L73.9366389,-5.68434189e-14 L73.9366389,21.8745899 C76.6248008,21.9373887 79.3120255,22.1557784 81.9055207,22.2804387 L81.9055207,26.93692 Z M64.2496954,10.6561065 L64.2496954,15.3435186 L57.8442216,15.3435186 L57.8442216,25.9996251 L53.2186709,25.9996251 L53.2186709,-5.68434189e-14 L66.3436123,-5.68434189e-14 L66.3436123,4.68741213 L57.8442216,4.68741213 L57.8442216,10.6561065 L64.2496954,10.6561065 Z M45.3435186,4.68741213 L45.3435186,26.2498828 C43.7810479,26.2498828 42.1876465,26.2498828 40.6561065,26.3117443 L40.6561065,4.68741213 L35.8121661,4.68741213 L35.8121661,-5.68434189e-14 L50.2183897,-5.68434189e-14 L50.2183897,4.68741213 L45.3435186,4.68741213 Z M30.749836,15.5928391 C28.687787,15.5928391 26.2498828,15.5928391 24.4999531,15.6875059 L24.4999531,22.6562939 C27.2499766,22.4678976 30,22.2495079 32.7809542,22.1557784 L32.7809542,26.6557316 L19.812541,27.6876933 L19.812541,-5.68434189e-14 L32.7809542,-5.68434189e-14 L32.7809542,4.68741213 L24.4999531,4.68741213 L24.4999531,10.9991564 C26.3126816,10.9991564 29.0936358,10.9054269 30.749836,10.9054269 L30.749836,15.5928391 Z M4.78114163,12.9684132 L4.78114163,29.3429562 C3.09401069,29.5313525 1.59340144,29.7497422 0,30 L0,-5.68434189e-14 L4.4690224,-5.68434189e-14 L10.562377,17.0315868 L10.562377,-5.68434189e-14 L15.2497891,-5.68434189e-14 L15.2497891,28.061674 C13.5935889,28.3437998 11.906458,28.4375293 10.1246602,28.6868498 L4.78114163,12.9684132 Z"></path>
-                    </g>
+                    <g><path d="M105.06233,14.2806261 L110.999156,30 C109.249227,29.7497422 107.500234,29.4366857 105.718437,29.1554972 L102.374168,20.4686475 L98.9371075,28.4375293 C97.2499766,28.1563408 95.5928391,28.061674 93.9057081,27.8432843 L99.9372012,14.0931671 L94.4680851,-5.68434189e-14 L99.5313525,-5.68434189e-14 L102.593495,7.87421502 L105.874965,-5.68434189e-14 L110.999156,-5.68434189e-14 L105.06233,14.2806261 Z M90.4686475,-5.68434189e-14 L85.8749649,-5.68434189e-14 L85.8749649,27.2499766 C87.3746368,27.3437061 88.9371075,27.4055675 90.4686475,27.5930265 L90.4686475,-5.68434189e-14 Z M81.9055207,26.93692 C77.7186241,26.6557316 73.5307901,26.4064111 69.250164,26.3117443 L69.250164,-5.68434189e-14 L73.9366389,-5.68434189e-14 L73.9366389,21.8745899 C76.6248008,21.9373887 79.3120255,22.1557784 81.9055207,22.2804387 L81.9055207,26.93692 Z M64.2496954,10.6561065 L64.2496954,15.3435186 L57.8442216,15.3435186 L57.8442216,25.9996251 L53.2186709,25.9996251 L53.2186709,-5.68434189e-14 L66.3436123,-5.68434189e-14 L66.3436123,4.68741213 L57.8442216,4.68741213 L57.8442216,10.6561065 L64.2496954,10.6561065 Z M45.3435186,4.68741213 L45.3435186,26.2498828 C43.7810479,26.2498828 42.1876465,26.2498828 40.6561065,26.3117443 L40.6561065,4.68741213 L35.8121661,4.68741213 L35.8121661,-5.68434189e-14 L50.2183897,-5.68434189e-14 L50.2183897,4.68741213 L45.3435186,4.68741213 Z M30.749836,15.5928391 C28.687787,15.5928391 26.2498828,15.5928391 24.4999531,15.6875059 L24.4999531,22.6562939 C27.2499766,22.4678976 30,22.2495079 32.7809542,22.1557784 L32.7809542,26.6557316 L19.812541,27.6876933 L19.812541,-5.68434189e-14 L32.7809542,-5.68434189e-14 L32.7809542,4.68741213 L24.4999531,4.68741213 L24.4999531,10.9991564 C26.3126816,10.9991564 29.0936358,10.9054269 30.749836,10.9054269 L30.749836,15.5928391 Z M4.78114163,12.9684132 L4.78114163,29.3429562 C3.09401069,29.5313525 1.59340144,29.7497422 0,30 L0,-5.68434189e-14 L4.4690224,-5.68434189e-14 L10.562377,17.0315868 L10.562377,-5.68434189e-14 L15.2497891,-5.68434189e-14 L15.2497891,28.061674 C13.5935889,28.3437998 11.906458,28.4375293 10.1246602,28.6868498 L4.78114163,12.9684132 Z"></path></g>
                 </svg>
             </a>
+            <div class="header-controls">
+                 <a href="/login" class="btn-signin-header">Sign In</a>
+            </div>
         </header>
 
-        <!-- Main Login Form -->
-        <main class="login-main">
-            <div class="login-form-container">
-                <h1>Sign Up</h1>
-                
-                <form class="login-form" id="loginForm">
-                    <input type="text" id="email" placeholder="Email" required>
-                    <input type="password" id="password" placeholder="Password" required>
-                    <button type="submit" class="btn btn-signin">Sign Up</button>
-                    
-                    
-                    
-                </form>
-                
-                <div class="signup-link">
+        <!-- Main Signup Hero Section -->
+        <main class="signup-hero">
+            <h1>Unlimited movies, TV shows, and more</h1>
+            <h2>Starts at MAD 35. Cancel anytime.</h2>
+            <form class="email-form" id="signupForm">
+                 <h3>Ready to watch? Enter your email and password to create your membership.</h3>
+                 <div class="email-form-group">
+                    <div class="input-container">
+                        <input type="email" id="email" name="email" placeholder=" " required>
+                        <label for="email">Email address</label>
+                    </div>
+                    <div class="input-container">
+                        <input type="password" id="password" name="password" placeholder=" " required minlength="6">
+                        <label for="password">Password</label>
+                    </div>
+                    <button type="submit" class="btn-get-started" id="submitButton">
+                        <span class="btn-text">Get Started</span>
+                        <svg class="chevron-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true"><path d="M7.293 4.707a1 1 0 011.414 0L16 12l-7.293 7.293a1 1 0 01-1.414-1.414L13.172 12 7.293 6.121a1 1 0 010-1.414z"></path></svg>
+                        <div class="spinner"></div>
+                    </button>
+                </div>
+                 <div id="message"></div>
+                 <div class="signin-link">
                     Already have an account? <a href="/login">Sign in</a>.
                 </div>
-
-                <div class="recaptcha">
-                    This page is protected by Google reCAPTCHA to ensure you're not a bot. 
-                    <a href="#">Learn more.</a>
-                </div>
-            </div>
+            </form>
         </main>
-
-        <!-- Footer -->
-        <footer class="site-footer">
-            <div class="footer-container">
-                <p class="footer-top">Questions? <a href="#">Contact us</a>.</p>
-                <ul class="footer-links">
-                    <li><a href="#">FAQ</a></li>
-                    <li><a href="#">Help Center</a></li>
-                    <li><a href="#">Terms of Use</a></li>
-                    <li><a href="#">Privacy</a></li>
-                    <li><a href="#">Cookie Preferences</a></li>
-                    <li><a href="#">Corporate Information</a></li>
-                </ul>
-                <div class="language-selector">
-                    <select name="language" id="lang-select">
-                        <option value="en" selected>English</option>
-                    </select>
-                </div>
-            </div>
-        </footer>
     </div>
 
+    <!-- Footer -->
+     <footer class="site-footer">
+        <div class="footer-container">
+            <p class="footer-top">Questions? <a href="#">Contact us</a>.</p>
+            <ul class="footer-links">
+                <li><a href="#">FAQ</a></li>
+                <li><a href="#">Help Center</a></li>
+                 <li><a href="#">Account</a></li>
+                 <li><a href="#">Media Center</a></li>
+                <li><a href="#">Investor Relations</a></li>
+                <li><a href="#">Jobs</a></li>
+                <li><a href="#">Ways to Watch</a></li>
+                <li><a href="#">Terms of Use</a></li>
+                <li><a href="#">Privacy</a></li>
+                <li><a href="#">Cookie Preferences</a></li>
+                <li><a href="#">Corporate Information</a></li>
+                <li><a href="#">Contact Us</a></li>
+                <li><a href="#">Speed Test</a></li>
+                <li><a href="#">Legal Notices</a></li>
+                 <li><a href="#">Only on Netflix</a></li>
+            </ul>
+            <p class="footer-country">Netflix Morocco</p>
+        </div>
+    </footer>
+
     <script>
-        (function(){
-            const form = document.getElementById('loginForm');
-            if (!form) return;
-            form.addEventListener('submit', async (e) => {
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('signupForm');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const submitButton = document.getElementById('submitButton');
+            const messageDiv = document.getElementById('message');
+
+            function setMessage(msg, isSuccess = false) {
+                if (!messageDiv) return;
+                messageDiv.textContent = msg;
+                messageDiv.className = isSuccess ? 'success' : '';
+            }
+
+            function setLoading(isLoading) {
+                 if (!submitButton) return;
+                 submitButton.classList.toggle('loading', isLoading);
+                 submitButton.disabled = isLoading;
+            }
+
+            async function handleSignup(e) {
                 e.preventDefault();
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
+
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+
+                if (!email || !password) {
+                    setMessage('Please enter both email and password.');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    setMessage('Password must be at least 6 characters long.');
+                    return;
+                }
+
+                setLoading(true);
+                setMessage('');
+
                 try {
                     const response = await fetch('/register', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password })
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email, password }),
                     });
+
                     const result = await response.json();
+
                     if (response.ok) {
-                        window.location.href = result.redirect || '/browse';
+                        setMessage('Account created successfully! Redirecting...', true);
+                        setTimeout(() => {
+                            window.location.href = result.redirect || '/browse';
+                        }, 1000);
                     } else {
-                        alert(result.message || 'Registration failed.');
+                        setMessage(result.message || 'Registration failed. Please try again.');
                     }
                 } catch (error) {
-                    alert('Could not connect to the server.');
+                    console.error('Signup error:', error);
+                    setMessage('An error occurred. Please try again.');
+                } finally {
+                    setLoading(false);
                 }
-            });
-        })();
+            }
+
+            if (form) {
+                form.addEventListener('submit', handleSignup);
+            }
+        });
     </script>
 </body>
 </html>

@@ -244,6 +244,10 @@ def register():
     if not email or not password:
         return jsonify({'success': False, 'message': 'Email and password are required.'}), 400
 
+    # Check if email already exists
+    if get_user_by_email(email):
+        return jsonify({'success': False, 'message': 'Email already exists.'}), 409
+
     # Derive username from email if not provided
     if not username:
         base = email.split('@')[0]

@@ -7,10 +7,20 @@ const playerBaseUrl = 'https://player.videasy.net';
 let MY_LIST_CACHE = [];
 let LIKED_LIST_CACHE = [];
 
-// Persistent browser cache for fast startup
+// Get user ID for user-specific caching
+const USER_ID = (() => {
+    try {
+        const el = document.getElementById('user-id-data');
+        return el ? el.textContent.trim() : 'default';
+    } catch (e) {
+        return 'default';
+    }
+})();
+
+// Persistent browser cache for fast startup (user-specific)
 const CACHE_KEYS = {
-    MY_LIST: 'srv_my_list_v1',
-    LIKES: 'srv_likes_v1'
+    MY_LIST: `srv_my_list_v1_${USER_ID}`,
+    LIKES: `srv_likes_v1_${USER_ID}`
 };
 
 function cacheWrite(key, data) {
@@ -803,47 +813,13 @@ function displaySearchResults(results, query) {
 document.addEventListener('DOMContentLoaded', initializePage);
 // Load server state before other UI wiring to reflect correct button states
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        // Seed from local cache for instant UI state
-        const cachedMy = cacheRead(CACHE_KEYS.MY_LIST);
-        const cachedLikes = cacheRead(CACHE_KEYS.LIKES);
-        if (cachedMy.length) MY_LIST_CACHE = cachedMy;
-        if (cachedLikes.length) LIKED_LIST_CACHE = cachedLikes;
-
-        [MY_LIST_CACHE, LIKED_LIST_CACHE] = await Promise.all([
-            apiGet('/api/me/my-list'),
-            apiGet('/api/me/likes')
-        ]);
-        cacheWrite(CACHE_KEYS.MY_LIST, MY_LIST_CACHE);
-        cacheWrite(CACHE_KEYS.LIKES, LIKED_LIST_CACHE);
-        // One-time migration from localStorage -> server
-        try {
-            if ((MY_LIST_CACHE || []).length === 0) {
-                const lsMy = JSON.parse(localStorage.getItem('netflix_my_list') || '[]');
-                if (Array.isArray(lsMy) && lsMy.length) {
-                    for (const it of lsMy) {
-                        const media_type = it.media_type || (it.title ? 'movie' : 'tv');
-                        await apiSend('/api/me/my-list', 'POST', { tmdb_id: it.id, media_type, data: it });
-                    }
-                    MY_LIST_CACHE = await apiGet('/api/me/my-list');
-                }
-            }
-            if ((LIKED_LIST_CACHE || []).length === 0) {
-                const lsLiked = JSON.parse(localStorage.getItem('netflix_liked_list') || '[]');
-                if (Array.isArray(lsLiked) && lsLiked.length) {
-                    for (const it of lsLiked) {
-                        const media_type = it.media_type || (it.title ? 'movie' : 'tv');
-                        await apiSend('/api/me/likes', 'POST', { tmdb_id: it.id, media_type, data: it });
-                    }
-                    LIKED_LIST_CACHE = await apiGet('/api/me/likes');
-                }
-            }
-        } catch (migrateErr) { console.warn('Migration from localStorage failed', migrateErr); }
-    } catch (e) {
-        console.warn('Failed to load server lists', e);
-        MY_LIST_CACHE = MY_LIST_CACHE || [];
-        LIKED_LIST_CACHE = LIKED_LIST_CACHE || [];
-    }
+    // Load from server only, no local cache seeding for user lists
+    [MY_LIST_CACHE, LIKED_LIST_CACHE] = await Promise.all([
+        apiGet('/api/me/my-list'),
+        apiGet('/api/me/likes')
+    ]);
+    cacheWrite(CACHE_KEYS.MY_LIST, MY_LIST_CACHE);
+    cacheWrite(CACHE_KEYS.LIKES, LIKED_LIST_CACHE);
 });
 
 function filterContent(filter) {
