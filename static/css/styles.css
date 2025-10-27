@@ -983,7 +983,8 @@ main {
 /* --- MOBILE-SPECIFIC ELEMENTS (Hidden by default) --- */
 .mobile-logo,
 .mobile-page-title,
-.mobile-filters {
+.mobile-filters,
+.mobile-bottom-nav {
     display: none;
 }
 
@@ -1266,7 +1267,7 @@ main {
         display: flex;
         flex-direction: column;
         gap: 16px; /* <--- Adjust this value for more or less space */
-        padding-bottom: 16px;
+        padding-bottom: 96px; /* Space for bottom navigation + extra padding */
     }
 
     .mobile-result-item {
@@ -1542,6 +1543,7 @@ main {
     #main-content {
         display: block;
         margin-top: 0; /* Let it flow naturally */
+        padding-bottom: 80px; /* Space for bottom navigation */
     }
     
     .content-row {
@@ -1608,6 +1610,77 @@ main {
     .modal-back-btn {
         top: calc(16px + env(safe-area-inset-top, 0px));
         left: calc(16px + env(safe-area-inset-left, 0px));
+    }
+
+    /* Mobile Bottom Navigation */
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #141414;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+        z-index: 1000;
+        justify-content: space-around;
+    }
+
+    .mobile-bottom-nav .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        flex: 1;
+        text-decoration: none;
+        color: #808080;
+        padding: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .mobile-bottom-nav .nav-item i {
+        font-size: 26px;
+        color: #808080;
+        transition: color 0.2s ease;
+    }
+
+    .mobile-bottom-nav .nav-item svg {
+        width: 26px;
+        height: 26px;
+        fill: #808080;
+        transition: fill 0.2s ease;
+    }
+
+    .mobile-bottom-nav .nav-item span {
+        font-size: 0.65rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+    }
+
+    .mobile-bottom-nav .nav-item.active {
+        color: #ffffff;
+    }
+
+    .mobile-bottom-nav .nav-item.active i {
+        color: #ffffff;
+    }
+
+    .mobile-bottom-nav .nav-item.active svg {
+        fill: #ffffff;
+    }
+
+    /* Profile Image in Navigation */
+    .nav-profile-img {
+        width: 28px;
+        height: 28px;
+        border-radius: 3px;
+        object-fit: cover;
+        border: 1px solid transparent;
+        transition: border-color 0.2s ease;
+    }
+
+    .mobile-bottom-nav .nav-item.active .nav-profile-img {
+        border-color: rgba(255, 255, 255, 0.3);
     }
 }
 

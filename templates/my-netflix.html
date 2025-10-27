@@ -10,6 +10,7 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='netflix-logo.png') }}">
     <link rel="icon" href="{{ url_for('static', filename='netflix-logo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/my-netflix.css') }}">
+    <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
     <title>My Netflix</title>
     
 </head>
@@ -56,6 +57,8 @@
         <div class="header-left">
             <a href="/browse"><img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg"
                     alt="Netflix Logo" class="header-logo"></a>
+            
+            <h1 class="mobile-page-title">My Netflix</h1>
             <nav class="main-nav">
                 <ul>
                     <li><a href="/browse">Home</a></li>
@@ -80,6 +83,11 @@
                     d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z">
                 </path>
             </svg>
+            <button class="mobile-menu-btn" id="mobile-menu-btn">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
+                </svg>
+            </button>
         </div>
     </header>
 
@@ -89,7 +97,54 @@
     </section>
 
     <main>
-        <h1 class="page-title">My Netflix</h1>
+        <!-- Mobile Profile Section -->
+        <section class="mobile-profile-section">
+            <img src="https://d2u1z1lopyfwlx.cloudfront.net/thumbnails/b6efbfd1-d9cd-5900-8b61-e49cfeaa5f43/6b5d82d0-df0d-5fb7-9d32-ae31b1651ada.jpg" alt="Profile" class="profile-avatar">
+            <div class="profile-name">
+                <span>{{ username }}</span>
+                <svg class="dropdown-icon" viewBox="0 0 24 24">
+                    <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"></path>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Notifications Section -->
+        <section class="mobile-card-section notifications-section">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <svg class="section-icon" viewBox="0 0 24 24">
+                        <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path>
+                    </svg>
+                    <h2>Notifications</h2>
+                </div>
+                <a href="#" class="see-all-btn">
+                    <span>See All</span>
+                    <svg viewBox="0 0 24 24">
+                        <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"></path>
+                    </svg>
+                </a>
+            </div>
+            <div class="notification-list">
+                <!-- Empty state or notification items will be populated by JS -->
+                <p class="empty-message">You don't have any notifications yet.</p>
+            </div>
+        </section>
+
+        <!-- Downloads Section -->
+        <section class="mobile-card-section downloads-section">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <svg class="section-icon" viewBox="0 0 24 24">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path>
+                    </svg>
+                    <h2>Downloads</h2>
+                </div>
+                <svg class="arrow-icon" viewBox="0 0 24 24">
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"></path>
+                </svg>
+            </div>
+            <p class="downloads-subtitle">Movies and shows that you download appear here.</p>
+        </section>
 
         <section class="section">
             <h2 class="section-title">Watch List</h2>
@@ -179,6 +234,26 @@
     </div>
 
     <div id="toast" class="toast"></div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav">
+        <a href="/browse" class="nav-item">
+            <i class="hgi hgi-stroke hgi-home-09"></i>
+            <span>Home</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="hgi hgi-stroke hgi-game-controller-03"></i>
+            <span>Games</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="hgi hgi-stroke hgi-video-replay"></i>
+            <span>New & Hot</span>
+        </a>
+        <a href="/my-netflix" class="nav-item active">
+            <img src="https://d2u1z1lopyfwlx.cloudfront.net/thumbnails/b6efbfd1-d9cd-5900-8b61-e49cfeaa5f43/6b5d82d0-df0d-5fb7-9d32-ae31b1651ada.jpg" alt="Profile" class="nav-profile-img">
+            <span>My Netflix</span>
+        </a>
+    </nav>
 
     <script id="my-netflix-payload" type="application/json">{{ (initial_payload or {}) | tojson }}</script>
     <script src="{{ url_for('static', filename='js/my-netflix.js') }}"></script>

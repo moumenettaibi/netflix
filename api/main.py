@@ -288,7 +288,7 @@ def index():
 @app.route("/browse")
 @login_required
 def home():
-    return render_template("index.html")
+    return render_template("index.html", username=current_user.username)
 
 # My Netflix route
 @app.route("/my-netflix")
@@ -300,7 +300,7 @@ def my_netflix():
         'likes': _load_user_collection('likes', user_id),
         'trailers': _load_user_collection('trailers_watched', user_id)
     }
-    return render_template("my-netflix.html", initial_payload=initial_payload)
+    return render_template("my-netflix.html", initial_payload=initial_payload, username=current_user.username)
 
 # --- My Netflix API ---
 def _uuid_str(u):
