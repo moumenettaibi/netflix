@@ -131,6 +131,7 @@ async function fetchAndPopulateHoverCard(card) {
 
 const initializePage = async () => {
     setupHeroSection();
+    addNewHotSection(); // Add New & Hot preview section
     createAndDisplayShuffledRows(); // New all-in-one function for content rows
 };
 
@@ -190,6 +191,7 @@ function shuffleArray(array) {
 
 async function createAndDisplayShuffledRows() {
     const mainContainer = document.getElementById('shuffled-rows-container');
+    if (!mainContainer) return; // Element not found on this page
     mainContainer.innerHTML = '<div class="loader"></div>';
 
     // Fetch user's location to get relevant trending data
@@ -285,6 +287,7 @@ async function createAndDisplayShuffledRows() {
 
 async function setupHeroSection(mediaType = 'all') {
     const heroContainer = document.getElementById('hero-container');
+    if (!heroContainer) return; // Element not found on this page
     heroContainer.innerHTML = '<div class="loader"></div>';
 
     try {
@@ -883,6 +886,26 @@ function setupNavFiltering() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Global notification badge updater (desktop header)
+  const globalBadge = document.getElementById('global-notification-badge');
+  async function refreshGlobalNotificationBadge() {
+    try {
+      const res = await fetch('/api/notifications?limit=50', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const all = await res.json();
+      const unread = Array.isArray(all) ? all.filter(n => !n.is_read).length : 0;
+      if (globalBadge) {
+        if (unread > 0) {
+          globalBadge.textContent = unread > 99 ? '99+' : String(unread);
+          globalBadge.style.display = 'inline-block';
+        } else {
+          globalBadge.style.display = 'none';
+        }
+      }
+    } catch (_) { /* ignore */ }
+  }
+  refreshGlobalNotificationBadge();
+  setInterval(refreshGlobalNotificationBadge, 60000);
     setupMobileFiltering();
     setupNavFiltering();
     setupMobileSearch();
@@ -894,6 +917,10 @@ function setupMobileSearch() {
     const mobileSearchBackBtn = document.getElementById('mobile-search-back-btn');
     const mobileSearchInput = document.getElementById('mobile-search-input');
     const mobileSearchResultsList = document.getElementById('mobile-search-results-list');
+
+    if (!searchIconTrigger || !mobileSearchPopup || !mobileSearchBackBtn || !mobileSearchInput || !mobileSearchResultsList) {
+        return; // Elements not found on this page
+    }
 
     searchIconTrigger.addEventListener('click', function() {
         if (window.innerWidth <= 480) {
@@ -1041,7 +1068,7 @@ document.addEventListener('click', function (event) {
     if (playButton) {
         event.preventDefault();
         const infoModal = document.getElementById('info-modal');
-        if (infoModal.classList.contains('active')) {
+        if (infoModal && infoModal.classList.contains('active')) {
             const trailerIframe = infoModal.querySelector('#modal-trailer-video');
             if (trailerIframe) {
                 trailerIframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
@@ -1064,7 +1091,7 @@ document.addEventListener('click', function (event) {
         const { id, type } = moreInfoButton.dataset;
         if (id && type) {
             const actorWorksPopup = document.getElementById('actor-works-popup');
-            if (actorWorksPopup.contains(moreInfoButton)) {
+            if (actorWorksPopup && actorWorksPopup.contains(moreInfoButton)) {
                 closeActorWorksPopup();
                 closeDetailsPopup();
             }
@@ -1074,7 +1101,10 @@ document.addEventListener('click', function (event) {
         event.preventDefault();
         const { id, type } = mobileResultItem.dataset;
         if (id && type) {
-            document.getElementById('mobile-search-popup').classList.remove('active');
+            const mobileSearchPopup = document.getElementById('mobile-search-popup');
+            if (mobileSearchPopup) {
+                mobileSearchPopup.classList.remove('active');
+            }
             openInfoModal(type, id);
         }
     } else if (posterCard && window.innerWidth <= 480 && !event.target.closest('.actor-works-grid')) {
@@ -1089,7 +1119,7 @@ document.addEventListener('click', function (event) {
     if (event.target.closest('#close-player-btn')) {
         closePlayerModal();
     }
-    
+
     if (event.target.closest('#close-details-popup-btn')) {
         closeDetailsPopup();
     }
@@ -1105,15 +1135,15 @@ document.addEventListener('click', function (event) {
     }
 
     const actorWorksPopup = document.getElementById('actor-works-popup');
-    if (actorWorksPopup.contains(event.target)) {
+    if (actorWorksPopup && actorWorksPopup.contains(event.target)) {
         const poster = event.target.closest('.poster-card');
         if (poster && !event.target.closest('.action-btn')) {
-             const { id, type } = poster.dataset;
-             if (id && type) {
-                 closeActorWorksPopup();
-                 closeDetailsPopup();
-                 openInfoModal(type, id);
-             }
+              const { id, type } = poster.dataset;
+              if (id && type) {
+                  closeActorWorksPopup();
+                  closeDetailsPopup();
+                  openInfoModal(type, id);
+              }
         }
     }
 });
@@ -1149,6 +1179,61 @@ window.addEventListener('scroll', () => {
 });
 
 // localStorage helpers removed; using server-backed caches
+
+// Add New & Hot section to the main page
+async function addNewHotSection() {
+    const mainContent = document.getElementById('main-content');
+    if (!mainContent) return;
+
+    // Create New & Hot section
+    const newHotSection = document.createElement('div');
+    newHotSection.className = 'notifications-section';
+    newHotSection.innerHTML = `
+        <div class="section-header">
+            <h2>New & Hot</h2>
+            <div class="section-header-right">
+                <a href="/new-hot" class="see-all-btn">
+                    See all
+                    <svg viewBox="0 0 24 24">
+                        <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div id="new-hot-preview" class="content-scroll">
+            <div class="loader"></div>
+        </div>
+    `;
+
+    // Insert after hero but before main content rows
+    const heroContainer = document.getElementById('hero-container');
+    if (heroContainer && heroContainer.nextSibling) {
+        mainContent.insertBefore(newHotSection, heroContainer.nextSibling);
+    } else {
+        mainContent.appendChild(newHotSection);
+    }
+
+    // Load preview content
+    loadNewHotPreview();
+}
+
+async function loadNewHotPreview() {
+    const container = document.getElementById('new-hot-preview');
+    if (!container) return;
+
+    try {
+        // Load trending content for preview
+        const trendingData = await fetchData(`https://api.themoviedb.org/3/trending/all/day?api_key=f2d7ae9dee829174c475e32fe8f993dc&language=en-US&page=1`);
+        if (trendingData?.results) {
+            displayContentRow(trendingData.results.slice(0, 6), container, 'mixed');
+        } else {
+            container.innerHTML = '<div class="empty-message">No trending content available.</div>';
+        }
+    } catch (error) {
+        console.error('Error loading new hot preview:', error);
+        container.innerHTML = '<div class="empty-message">Unable to load trending content.</div>';
+    }
+}
 
 function showToast(message) {
     const toast = document.getElementById('toast');

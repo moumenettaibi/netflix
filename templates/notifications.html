@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" type="image/png" sizes="32x32" href="static/netflix-logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="static/netflix-logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="static/netflix-logo.png">
+    <link rel="shortcut icon" href="static/netflix-logo.png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
+
+    <title>Notifications - Netflix</title>
+    <meta name="description" content="View your notifications for new movies, hot shows, and trending content on Netflix.">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.Netflix.com/">
+    <meta property="og:title" content="Notifications - Netflix">
+    <meta property="og:description" content="View your notifications for new movies, hot shows, and trending content on Netflix.">
+    <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://www.Netflix.com/">
+    <meta property="twitter:title" content="Notifications - Netflix">
+    <meta property="twitter:description" content="View your notifications for new movies, hot shows, and trending content on Netflix.">
+    <meta property="twitter:image" content="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg">
+</head>
+
+<body>
+
+    <!-- Simple mobile header like the screenshot -->
+    <div class="mobile-topbar">
+        <div class="topbar-left">
+            <a class="topbar-back" href="/my-netflix" aria-label="Back">
+                <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path></svg>
+            </a>
+            <div class="topbar-title">Notifications</div>
+        </div>
+        <div class="topbar-actions">
+            <a href="/browse" id="search-icon-trigger" aria-label="Search" class="topbar-icon">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
+            </a>
+            <button class="nav-notification-btn" id="global-notification-btn" title="Notifications" onclick="window.location.href='/my-netflix/notifications'">
+                <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S10.5 3.17 10.5 4v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path></svg>
+                <span class="nav-notification-badge" id="global-notification-badge">0</span>
+            </button>
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu" type="button">
+                <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <main id="notifications-main">
+        <div class="notifications-feed">
+            <div id="notifications-list" class="feed-list">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="info-modal"></div>
+    <div id="player-modal" class="player-modal">
+        <button id="close-player-btn" class="close-player-btn" title="Back to Browse">
+            <svg viewBox="0 0 24 24">
+                <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path>
+            </svg>
+        </button>
+        <div id="player-container"></div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <!-- Hidden User ID for cache isolation -->
+    <div id="user-id-data" style="display: none;">{{ current_user.id if current_user.is_authenticated else 'guest' }}</div>
+
+    <!-- Mobile Menu Popup -->
+    <div id="mobile-menu-popup" class="mobile-menu-popup">
+        <div class="mobile-menu-content">
+            <div class="mobile-menu-item" onclick="manageProfiles()">
+                <svg class="mobile-menu-icon" viewBox="0 0 24 24">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+                <span>Manage Profiles</span>
+            </div>
+            <div class="mobile-menu-item" onclick="appSettings()">
+                <svg class="mobile-menu-icon" viewBox="0 0 24 24">
+                    <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.82,11.69,4.82,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94zM12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                </svg>
+                <span>App Settings</span>
+            </div>
+            <div class="mobile-menu-item" onclick="accountSettings()">
+                <svg class="mobile-menu-icon" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <span>Account</span>
+            </div>
+            <div class="mobile-menu-item" onclick="helpCenter()">
+                <svg class="mobile-menu-icon" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                </svg>
+                <span>Help</span>
+            </div>
+            <div class="mobile-menu-item" onclick="signOut()">
+                <svg class="mobile-menu-icon" viewBox="0 0 24 24">
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                </svg>
+                <span>Sign Out</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav">
+        <a href="/browse" class="nav-item">
+            <i class="hgi hgi-stroke hgi-home-09"></i>
+            <span>Home</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="hgi hgi-stroke hgi-game-controller-03"></i>
+            <span>Games</span>
+        </a>
+        <a href="/new-hot" class="nav-item">
+            <i class="hgi hgi-stroke hgi-video-replay"></i>
+            <span>New & Hot</span>
+        </a>
+        <a href="/my-netflix" class="nav-item active">
+            <img src="https://d2u1z1lopyfwlx.cloudfront.net/thumbnails/b6efbfd1-d9cd-5900-8b61-e49cfeaa5f43/6b5d82d0-df0d-5fb7-9d32-ae31b1651ada.jpg" alt="Profile" class="nav-profile-img">
+            <span>My Netflix</span>
+        </a>
+    </nav>
+
+    <footer></footer>
+
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+
+</html>

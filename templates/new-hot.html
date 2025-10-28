@@ -9,27 +9,23 @@
     <link rel="apple-touch-icon" sizes="180x180" href="static/netflix-logo.png">
     <link rel="shortcut icon" href="static/netflix-logo.png">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/new-hot.css') }}">
+    <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
 
-
-    <title>Netflix - Watch Tv Shows Online, Watch Movies Online</title>
-    <meta name="description"
-        content="Watch netflix movies & TV shows or stream right to your smart Tv, game console, PC, Mac, mobile, tablet and more.">
+    <title>New & Hot - Netflix</title>
+    <meta name="description" content="Discover new movies and trending TV shows on Netflix.">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.Netflix.com/">
-    <meta property="og:title" content="Netflix - Watch Tv Shows Online, Watch Movies Online">
-    <meta property="og:description"
-        content="Watch netflix movies & TV shows or stream right to your smart Tv, game console, PC, Mac, mobile, tablet and more.">
+    <meta property="og:title" content="New & Hot - Netflix">
+    <meta property="og:description" content="Discover new movies and trending TV shows on Netflix.">
     <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg">
 
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://www.Netflix.com/">
-    <meta property="twitter:title" content="Netflix - Watch Tv Shows Online, Watch Movies Online">
-    <meta property="twitter:description"
-        content="Watch netflix movies & TV shows or stream right to your smart Tv, game console, PC, Mac, mobile, tablet and more.">
+    <meta property="twitter:title" content="New & Hot - Netflix">
+    <meta property="twitter:description" content="Discover new movies and trending TV shows on Netflix.">
     <meta property="twitter:image" content="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg">
-    <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
-
 </head>
 
 <body>
@@ -40,11 +36,11 @@
                     alt="Netflix Logo" class="header-logo"></a>
 
             <img src="static/netflix-logo.png" alt="N" class="mobile-logo">
-            <h1 class="mobile-page-title">Home</h1>
+            <h1 class="mobile-page-title">New & Hot</h1>
 
             <nav class="main-nav">
                 <ul>
-                    <li class="active" id="nav-home"><a href="#">Home</a></li>
+                    <li id="nav-home"><a href="/browse">Home</a></li>
                     <li id="nav-shows"><a href="#">Shows</a></li>
                     <li id="nav-movies"><a href="#">Movies</a></li>
                     <li><a href="/my-netflix">My Netflix</a></li>
@@ -73,27 +69,58 @@
         </div>
     </header>
 
-    <nav class="mobile-filters">
-        <button>Shows</button>
-        <button>Movies</button>
-        <button>Categories <svg viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"></path></svg></button>
-    </nav>
+    <main id="new-hot-main">
+        <div class="new-hot-container">
+            <div class="new-hot-header">
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="coming-soon">🔜 Coming Soon</button>
+                    <button class="filter-tab" data-filter="everyone-watching">🔥 Everyone's Watching</button>
+                    <button class="filter-tab" data-filter="top-10-tv">📺 Top 10 TV Shows</button>
+                    <button class="filter-tab" data-filter="top-10-movies">🎬 Top 10 Movies</button>
+                </div>
+            </div>
 
-    <section id="search-results-section" class="search-results-section">
-        <div id="search-results"></div>
-        <div id="search-feedback"></div>
-    </section>
+            <div class="new-hot-content">
+                <!-- Coming Soon Section -->
+                <div id="coming-soon-section" class="content-section active">
+                    <div class="section-content">
+                        <div id="coming-soon-content" class="content-scroll">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                </div>
 
-    <section id="hero-container" class="hero-container"></section>
+                <!-- Everyone's Watching Section -->
+                <div id="everyone-watching-section" class="content-section">
+                    <div class="section-content">
+                        <div id="everyone-watching-content" class="content-scroll">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                </div>
 
-    <main id="main-content">
-        <div id="shuffled-rows-container">
-            <div class="loader"></div>
+                <!-- Top 10 TV Shows Section -->
+                <div id="top-10-tv-section" class="content-section">
+                    <div class="section-content">
+                        <div id="top-10-tv-content" class="content-scroll">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top 10 Movies Section -->
+                <div id="top-10-movies-section" class="content-section">
+                    <div class="section-content">
+                        <div id="top-10-movies-content" class="content-scroll">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
     <div id="info-modal"></div>
-
     <div id="player-modal" class="player-modal">
         <button id="close-player-btn" class="close-player-btn" title="Back to Browse">
             <svg viewBox="0 0 24 24">
@@ -105,33 +132,9 @@
 
     <div id="toast" class="toast"></div>
 
-    <div id="mobile-search-popup" class="mobile-search-popup">
-        <div class="mobile-search-header">
-            <button class="mobile-search-back-btn" id="mobile-search-back-btn">
-                <svg viewBox="0 0 24 24">
-                    <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path>
-                </svg>
-            </button>
-            <div class="mobile-search-input-container">
-                <svg class="mobile-search-icon" viewBox="0 0 24 24">
-                    <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
-                </svg>
-                <input type="text" id="mobile-search-input" class="mobile-search-input" placeholder="Search shows, movies..." autocomplete="off">
-
-            </div>
-        </div>
-        <div class="mobile-search-results">
-            <div class="mobile-search-title">Recommended TV Shows & Movies</div>
-            <div id="mobile-search-results-list"></div>
-        </div>
-    </div>
-
-    <div id="details-popup" class="details-popup"></div>
-    <div id="actor-works-popup" class="actor-works-popup"></div>
-
     <!-- Mobile Bottom Navigation -->
     <nav class="mobile-bottom-nav">
-        <a href="/browse" class="nav-item active">
+        <a href="/browse" class="nav-item">
             <i class="hgi hgi-stroke hgi-home-09"></i>
             <span>Home</span>
         </a>
@@ -139,7 +142,7 @@
             <i class="hgi hgi-stroke hgi-game-controller-03"></i>
             <span>Games</span>
         </a>
-        <a href="/new-hot" class="nav-item">
+        <a href="/new-hot" class="nav-item active">
             <i class="hgi hgi-stroke hgi-video-replay"></i>
             <span>New & Hot</span>
         </a>
@@ -152,6 +155,7 @@
     <footer></footer>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/new-hot.js') }}"></script>
 
 </body>
 

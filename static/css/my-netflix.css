@@ -324,6 +324,17 @@
             justify-content: center;
         }
 
+        /* Desktop notifications card style */
+        .notifications-section .notification-list.feed-list {
+            max-height: none;
+            overflow: visible;
+            padding: 0;
+        }
+
+        .notifications-section .section-header {
+            margin-bottom: 12px;
+        }
+
         #info-modal.active {
             display: flex;
         }
@@ -353,6 +364,76 @@
 
         .modal-content-wrapper::-webkit-scrollbar {
             display: none;
+        }
+
+        /* Desktop card sections (mirror mobile style with desktop spacing) */
+        .mobile-card-section {
+            background-color: rgba(20, 20, 20, 0.95);
+            margin: 0 50px 30px 50px;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-icon {
+            width: 28px;
+            height: 28px;
+            fill: var(--text-color);
+        }
+
+        .section-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .see-all-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary-color);
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        .see-all-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-secondary-color);
+        }
+
+        .arrow-icon {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-secondary-color);
+        }
+
+        .notifications-section .notification-list.feed-list {
+            max-height: none;
+            overflow: visible;
+            padding: 0;
+        }
+
+        .notification-badge {
+            margin-left: 8px;
+        }
+
+        .notification-list .feed-item {
+            padding: 12px 12px;
         }
 
         @keyframes modal-fade-in {
@@ -492,6 +573,13 @@
             width: 22px;
             height: 22px;
             fill: #fff;
+        }
+
+        .mute-toggle-btn {
+            position: absolute;
+            bottom: 48px;
+            right: 48px;
+            z-index: 6;
         }
 
         .modal-body {
@@ -704,7 +792,6 @@
         .mobile-page-title,
         .mobile-menu-btn,
         .mobile-profile-section,
-        .mobile-card-section,
         .mobile-bottom-nav {
             display: none;
         }
@@ -880,6 +967,11 @@
                 left: 20px !important;
             }
 
+            .mute-toggle-btn {
+                bottom: 24px;
+                right: 24px;
+            }
+
             /* Header adjustments */
             header {
                 padding: 5px 15px 5px 0px;
@@ -1027,15 +1119,83 @@
                 fill: var(--text-secondary-color);
             }
 
-            .notification-list {
-                margin-top: 15px;
-            }
+        .notification-list {
+            margin-top: 15px;
+        }
 
-            .empty-message {
-                color: var(--text-secondary-color);
-                font-size: 0.95rem;
-                margin: 0;
-            }
+        .notification-list.feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 0 5px;
+        }
+
+        .notification-list .feed-item {
+            display: flex;
+            gap: 12px;
+            padding: 10px 8px;
+            border-radius: 10px;
+            background: #111;
+            align-items: center;
+        }
+
+        .notification-list .feed-item.unread {
+            background: #151515;
+        }
+
+        .notification-list .feed-thumb {
+            width: 84px;
+            height: 84px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+        }
+
+        .notification-list .feed-thumb.placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .notification-list .feed-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notification-list .feed-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #fff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .notification-list .feed-subtitle {
+            color: #bbb;
+            font-size: 16px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .notification-list .feed-date {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .empty-message {
+            color: var(--text-secondary-color);
+            font-size: 0.95rem;
+            margin: 0;
+        }
 
             .downloads-subtitle {
                 color: var(--text-secondary-color);
@@ -1121,7 +1281,7 @@
 
             .section {
                 margin-bottom: 40px;
-                padding: 0 15px;
+                padding: 0;
             }
 
             .section-title {
@@ -1129,17 +1289,34 @@
                 font-weight: 600;
                 margin-bottom: 15px;
                 color: var(--text-color);
+                padding: 0 15px;
             }
 
             .content-grid {
-                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                display: flex;
+                flex-direction: row;
                 gap: 8px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                padding: 0 15px 0 0;
+            }
+
+            .content-grid::-webkit-scrollbar {
+                display: none;
             }
 
             .poster-card {
-                width: 100%;
-                height: auto;
-                aspect-ratio: 2 / 3;
+                width: 110px;
+                height: 165px;
+                flex-shrink: 0;
+                scroll-snap-align: start;
+            }
+
+            .poster-card:first-child {
+                margin-left: 15px;
             }
 
             .poster-card img {
@@ -1148,12 +1325,20 @@
             }
 
             #search-results {
-                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
                 gap: 8px;
+                padding: 0 15px;
+            }
+
+            #search-results .poster-card {
+                width: 110px;
+                height: 165px;
             }
 
             .search-results-section {
-                padding: 80px 15px 100px;
+                padding: 80px 0 100px;
             }
 
             #search-feedback {
@@ -1190,5 +1375,98 @@
             .modal-close-btn {
                 top: calc(16px + env(safe-area-inset-top, 0px));
                 right: calc(16px + env(safe-area-inset-right, 0px));
+            }
+        }
+
+        /* --- MOBILE MENU POPUP STYLES (match /notifications) --- */
+        .mobile-menu-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .mobile-menu-popup.active {
+            display: flex !important;
+        }
+
+        .mobile-menu-content {
+            background-color: #2a2a2a;
+            width: 100%;
+            max-width: 100%;
+            border-radius: 12px 12px 0 0;
+            padding: 20px 0 40px 0;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 10001;
+        }
+
+        .mobile-menu-popup.active .mobile-menu-content {
+            transform: translateY(0) !important;
+        }
+
+        .mobile-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            gap: 16px;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .mobile-menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .mobile-menu-item:active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .mobile-menu-icon {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: #ffffff;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        .mobile-menu-item span {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 500;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        @media (max-width: 480px) {
+            .mobile-menu-content {
+                padding: 16px 0 32px 0;
+            }
+            .mobile-menu-item {
+                padding: 14px 20px;
+                gap: 14px;
+            }
+            .mobile-menu-icon {
+                width: 22px;
+                height: 22px;
+            }
+            .mobile-menu-item span {
+                font-size: 15px;
             }
         }

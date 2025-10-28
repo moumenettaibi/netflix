@@ -2,6 +2,12 @@
         const posterBaseUrl = 'https://image.tmdb.org/t/p/w500';
         const backdropBaseUrl = 'https://image.tmdb.org/t/p/original';
         const playerBaseUrl = 'https://player.videasy.net';
+        
+        // Notification management
+        let notificationsCache = [];
+        let unreadCount = 0;
+        let notificationPollingInterval = null;
+        let notificationWebSocket = null;
 
         const SERVER_SEED = (() => {
             try {
@@ -33,7 +39,8 @@
         const CACHE_KEYS = {
             MY_LIST: `srv_my_list_v1_${USER_ID}`,
             LIKES: `srv_likes_v1_${USER_ID}`,
-            TRAILERS: `srv_trailers_v1_${USER_ID}`
+            TRAILERS: `srv_trailers_v1_${USER_ID}`,
+            NOTIFICATIONS: `srv_notifications_v1_${USER_ID}`
         };
 
         // Clean up caches from other users
@@ -671,7 +678,7 @@
 
             const officialTrailer = data.videos?.results.find(v => v.site === 'YouTube' && v.type === 'Trailer');
             const mediaContent = officialTrailer
-                ? `<iframe src="https://www.youtube.com/embed/${officialTrailer.key}?autoplay=1&mute=0&controls=0&loop=1&playlist=${officialTrailer.key}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`
+                ? `<iframe id="modal-trailer-video" src="https://www.youtube.com/embed/${officialTrailer.key}?autoplay=1&mute=1&controls=0&loop=1&playlist=${officialTrailer.key}&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`
                 : '';
 
             const backgroundStyle = !officialTrailer ? `style="background-image: url('${backdropBaseUrl}${data.backdrop_path}')"` : '';
@@ -679,6 +686,8 @@
             const playIcon = `<svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z" fill="currentColor"></path></svg>`;
             const addIcon = `<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>`;
             const likeIcon = `<svg viewBox="0 0 24 24"><path d="M23,10C23,8.89,22.1,8,21,8H14.68L15.64,3.43C15.66,3.33,15.67,3.22,15.67,3.11C15.67,2.7,15.5,2.32,15.23,2.05L14.17,1L7.59,7.59C7.22,7.95,7,8.45,7,9V19A2,2 0 0,0 9,21H18C18.83,21,19.54,20.5,19.84,19.78L22.86,12.73C22.95,12.5,23,12.26,23,12V10M1,21H5V9H1V21Z"></path></svg>`;
+            const muteIcon = `<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"></path></svg>`;
+            const unmuteIcon = `<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>`;
 
             const likedList = LIKED_LIST_CACHE || [];
             const isLiked = likedList.some(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
@@ -703,6 +712,10 @@
                                 <button class="modal-icon-btn like-btn ${likedClass}" title="Like" onclick="addToLikedList('${itemId}', '${mediaType}', this)">${likeIcon}</button>
                             </div>
                         </div>
+                        ${officialTrailer ? `
+                        <button class="modal-icon-btn mute-toggle-btn" id="mute-toggle-btn" data-muted="true" title="Unmute">
+                            ${muteIcon}
+                        </button>` : ''}
                     </div>
                     <div class="modal-body">
                         <div class="modal-metadata-row">
@@ -720,6 +733,29 @@
                         </div>
                     </div>`;
             }
+
+            // Setup mute/unmute toggle
+            const muteToggleButton = infoModal.querySelector('#mute-toggle-btn');
+            if (muteToggleButton) {
+                const trailerIframe = infoModal.querySelector('iframe');
+                muteToggleButton.addEventListener('click', () => {
+                    const isMuted = muteToggleButton.dataset.muted === 'true';
+                    const action = isMuted ? 'unMute' : 'mute';
+                    const newMutedState = !isMuted;
+
+                    if (trailerIframe && trailerIframe.contentWindow) {
+                        trailerIframe.contentWindow.postMessage(JSON.stringify({
+                            event: 'command',
+                            func: action,
+                            args: []
+                        }), '*');
+                    }
+
+                    muteToggleButton.dataset.muted = newMutedState;
+                    muteToggleButton.title = newMutedState ? 'Unmute' : 'Mute';
+                    muteToggleButton.innerHTML = newMutedState ? muteIcon : unmuteIcon;
+                });
+            }
         }
 
         function closeInfoModal() {
@@ -729,7 +765,47 @@
             infoModal.innerHTML = '';
         }
 
-        // --- LOGOUT FUNCTIONALITY ---
+        // --- MOBILE MENU FUNCTIONS ---
+        window.toggleMobileMenu = function() {
+            const popup = document.getElementById('mobile-menu-popup');
+            if (popup) {
+                popup.classList.toggle('active');
+                document.body.classList.toggle('modal-open');
+            }
+        }
+
+        window.closeMobileMenu = function() {
+            const popup = document.getElementById('mobile-menu-popup');
+            if (popup) {
+                popup.classList.remove('active');
+                document.body.classList.remove('modal-open');
+            }
+        }
+
+        window.manageProfiles = function() {
+            closeMobileMenu();
+            showToast('Manage Profiles - Coming Soon');
+        }
+
+        window.appSettings = function() {
+            closeMobileMenu();
+            showToast('App Settings - Coming Soon');
+        }
+
+        window.accountSettings = function() {
+            closeMobileMenu();
+            showToast('Account Settings - Coming Soon');
+        }
+
+        window.helpCenter = function() {
+            closeMobileMenu();
+            showToast('Help Center - Coming Soon');
+        }
+
+        window.signOut = function() {
+            closeMobileMenu();
+            logout();
+        }
         async function logout() {
             try {
                 const response = await fetch('/logout', {
@@ -809,6 +885,7 @@
         document.addEventListener('click', function (event) {
             const moreInfoButton = event.target.closest('.more-info-btn');
             const playButton = event.target.closest('.js-play-trigger');
+            const posterCard = event.target.closest('.poster-card');
 
             if (playButton) {
                 event.preventDefault();
@@ -823,6 +900,15 @@
                 event.preventDefault();
                 const { id, type } = moreInfoButton.dataset;
                 if (id && type) openInfoModal(type, id);
+            }
+
+            // Mobile: Click on poster card opens modal
+            if (posterCard && window.innerWidth <= 480) {
+                const { id, type } = posterCard.dataset;
+                if (id && type) {
+                    event.preventDefault();
+                    openInfoModal(type, id);
+                }
             }
 
             if (event.target.closest('.modal-close-btn') || event.target.matches('.modal-backdrop')) {
@@ -929,3 +1015,228 @@
                 if (card) searchResultsGrid.appendChild(card);
             });
         }
+
+        // --- NOTIFICATION FUNCTIONS ---
+
+        async function fetchNotifications() {
+            try {
+                // 1) Try to show cached notifications immediately for fast UI
+                const cached = cacheRead(CACHE_KEYS.NOTIFICATIONS);
+                if (Array.isArray(cached) && cached.length) {
+                    notificationsCache = cached;
+                    updateNotificationBadge();
+                    renderNotifications();
+                }
+
+                // 2) Fetch fresh notifications in background with cache busting
+                const allResponse = await fetch(`/api/notifications?limit=50&_t=${Date.now()}`);
+                if (allResponse.ok) {
+                    const allNotifications = await allResponse.json();
+                    notificationsCache = allNotifications;
+                    cacheWrite(CACHE_KEYS.NOTIFICATIONS, notificationsCache);
+                    updateNotificationBadge();
+                    renderNotifications();
+                }
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+                // If network fails and we have cache, keep cached UI
+                if (Array.isArray(notificationsCache) && notificationsCache.length) return;
+                const cached = cacheRead(CACHE_KEYS.NOTIFICATIONS);
+                if (Array.isArray(cached) && cached.length) {
+                    notificationsCache = cached;
+                    updateNotificationBadge();
+                    renderNotifications();
+                }
+            }
+        }
+
+        async function fetchAllNotifications() {
+            try {
+                const response = await fetch('/api/notifications?limit=50');
+                if (response.ok) {
+                    const notifications = await response.json();
+                    notificationsCache = notifications;
+                    updateNotificationBadge();
+                    renderNotifications();
+                }
+            } catch (error) {
+                console.error('Error fetching all notifications:', error);
+            }
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notification-badge');
+            const unreadCount = notificationsCache.filter(n => !n.is_read).length;
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function renderNotifications() {
+            const list = document.getElementById('notification-list');
+            if (!list) return;
+            list.classList.add('feed-list');
+
+            // Only show unread notifications on My Netflix page
+            const unreadNotifications = notificationsCache.filter(n => !n.is_read);
+
+            if (unreadNotifications.length === 0) {
+                list.innerHTML = '';
+                return;
+            }
+
+            const recentNotifications = unreadNotifications.slice(0, 2);
+            list.innerHTML = recentNotifications.map(n => {
+                const dateStr = new Date(n.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                const posterUrl = n.poster_path ? `${posterBaseUrl}${n.poster_path}` : '';
+                return `
+                <div class="feed-item unread" data-id="${n.id}">
+                    ${posterUrl ? `<img class=\"feed-thumb\" src=\"${posterUrl}\" alt=\"${n.title}\">` : `<div class=\"feed-thumb placeholder\"></div>`}
+                    <div class="feed-body">
+                        <div class="feed-title">${n.title}</div>
+                        <div class="feed-subtitle">${n.message}</div>
+                        <div class="feed-date">${dateStr}</div>
+                    </div>
+                    <div class="feed-actions-inline"></div>
+                </div>`;
+            }).join('');
+        }
+
+        async function markNotificationAsRead(notificationId) {
+            try {
+                const response = await fetch(`/api/notifications/${notificationId}/mark-read`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const notification = notificationsCache.find(n => n.id === notificationId);
+                    if (notification) {
+                        notification.is_read = true;
+                        updateNotificationBadge();
+                        renderNotifications();
+                    }
+                }
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+            }
+        }
+
+        async function deleteNotification(notificationId) {
+            try {
+                const response = await fetch(`/api/notifications/${notificationId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    notificationsCache = notificationsCache.filter(n => n.id !== notificationId);
+                    updateNotificationBadge();
+                    renderNotifications();
+                }
+            } catch (error) {
+                console.error('Error deleting notification:', error);
+            }
+        }
+
+        async function markAllNotificationsAsRead() {
+            try {
+                const response = await fetch('/api/notifications/mark-all-read', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    notificationsCache.forEach(n => n.is_read = true);
+                    updateNotificationBadge();
+                    renderNotifications();
+                }
+            } catch (error) {
+                console.error('Error marking all notifications as read:', error);
+            }
+        }
+
+        async function refreshNotifications() {
+            await fetchAllNotifications();
+        }
+
+        async function fetchNewNotificationsFromTMDB() {
+            try {
+                const response = await fetch('/api/admin/fetch-tmdb-notifications', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast(`Added ${result.notifications_added} new notifications!`);
+                        await fetchAllNotifications();
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching new notifications from TMDB:', error);
+                showToast('Failed to fetch new notifications');
+            }
+        }
+
+        // Add CSS animation for spinning refresh icon
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize notifications when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load notifications
+            fetchNotifications();
+            // Process due reminders and refresh
+            (async () => {
+                try {
+                    await fetch('/api/me/reminders/process', { method: 'POST' });
+                    await fetchNotifications();
+                } catch (e) { /* ignore */ }
+            })();
+
+            // Auto-refresh every 60s
+            setInterval(() => { fetchNotifications(); }, 60000);
+
+            // Setup mobile menu button
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', window.toggleMobileMenu);
+            }
+
+            // Close menu when clicking outside
+            const mobileMenuPopup = document.getElementById('mobile-menu-popup');
+            if (mobileMenuPopup) {
+                mobileMenuPopup.addEventListener('click', function(e) {
+                    if (e.target === mobileMenuPopup) {
+                        window.closeMobileMenu();
+                    }
+                });
+            }
+
+            // Mark all current notifications as read when user clicks See All
+            const seeAllLink = document.querySelector('.notifications-section .see-all-btn');
+            if (seeAllLink) {
+                seeAllLink.addEventListener('click', async (e) => {
+                    // Mark all as read on the server
+                    try {
+                        await fetch('/api/notifications/mark-all-read', {
+                            method: 'POST'
+                        });
+                        // Update local cache
+                        notificationsCache.forEach(n => n.is_read = true);
+                        cacheWrite(CACHE_KEYS.NOTIFICATIONS, notificationsCache);
+                        updateNotificationBadge();
+                        renderNotifications();
+                    } catch (error) {
+                        console.error('Error marking notifications as read:', error);
+                    }
+                });
+            }
+        });

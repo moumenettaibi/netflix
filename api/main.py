@@ -164,8 +164,65 @@ def run_migrations():
                 );
             """)
 
+            # Create notifications table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    title TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    media_type TEXT NOT NULL CHECK (media_type IN ('movie','tv')),
+                    tmdb_id BIGINT,
+                    poster_path TEXT,
+                    notification_type TEXT NOT NULL CHECK (notification_type IN ('new_movie', 'hot_show', 'trending')),
+                    is_read BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMPTZ
+                );
+            """)
+
+            # Create notification settings table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS notification_settings (
+                    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    new_movies_enabled BOOLEAN DEFAULT TRUE,
+                    hot_shows_enabled BOOLEAN DEFAULT TRUE,
+                    trending_enabled BOOLEAN DEFAULT TRUE,
+                    email_notifications BOOLEAN DEFAULT FALSE,
+                    push_notifications BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+
+            # Create reminders table for upcoming releases
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS reminders (
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    tmdb_id BIGINT NOT NULL,
+                    media_type TEXT NOT NULL CHECK (media_type IN ('movie','tv')),
+                    title TEXT,
+                    poster_path TEXT,
+                    release_date DATE NOT NULL,
+                    notified BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, media_type, tmdb_id)
+                );
+            """)
+
+            # Create indexes for notifications
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_notifications_user_type
+                ON notifications(user_id, notification_type, created_at DESC);
+            """)
+            
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_notifications_unread
+                ON notifications(user_id, is_read, created_at DESC);
+            """)
+
             conn.commit()
-            print("Schema check complete (users, my_list, likes, trailers_watched).")
+            print("Schema check complete (users, my_list, likes, trailers_watched, notifications, notification_settings).")
 
 run_migrations()
 
@@ -306,6 +363,18 @@ def my_netflix():
     }
     return render_template("my-netflix.html", initial_payload=initial_payload, username=current_user.username)
 
+# Notifications page
+@app.route("/my-netflix/notifications")
+@login_required
+def my_netflix_notifications():
+    return render_template("notifications.html", username=current_user.username)
+
+# New & Hot route
+@app.route("/new-hot")
+@login_required
+def new_hot_page():
+    return render_template("new-hot.html", username=current_user.username)
+
 # --- My Netflix API ---
 def _uuid_str(u):
     return str(u) if isinstance(u, uuid.UUID) else u
@@ -440,6 +509,344 @@ def api_trailers():
         conn.commit()
     return jsonify({'success': True})
 
+# --- Notification API Endpoints ---
+
+@app.route('/api/notifications', methods=['GET'])
+@login_required
+def get_notifications():
+    """Get user's notifications"""
+    user_id = _uuid_str(current_user.id)
+    
+    # Get query parameters
+    limit = int(request.args.get('limit', 20))
+    offset = int(request.args.get('offset', 0))
+    notification_type = request.args.get('type')
+    unread_only = request.args.get('unread_only', 'false').lower() == 'true'
+    
+    # Build query
+    query = """
+        SELECT id, title, message, media_type, tmdb_id, poster_path,
+               notification_type, is_read, created_at
+        FROM notifications
+        WHERE user_id = %s
+    """
+    params = [user_id]
+    
+    if notification_type:
+        query += " AND notification_type = %s"
+        params.append(notification_type)
+    
+    if unread_only:
+        query += " AND is_read = FALSE"
+    
+    query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
+    params.extend([limit, offset])
+    
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(query, params)
+            notifications = cur.fetchall()
+    
+    return jsonify(notifications)
+
+@app.route('/api/me/reminders', methods=['GET', 'POST', 'DELETE'])
+@login_required
+def reminders_api():
+    """Manage user reminders for upcoming releases."""
+    user_id = _uuid_str(current_user.id)
+    if request.method == 'GET':
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT tmdb_id, media_type, title, poster_path, release_date, notified
+                    FROM reminders
+                    WHERE user_id = %s
+                    ORDER BY release_date ASC
+                    """,
+                    (user_id,)
+                )
+                rows = cur.fetchall()
+        return jsonify(rows)
+
+    payload = request.get_json() or {}
+    tmdb_id = payload.get('tmdb_id')
+    media_type = (payload.get('media_type') or '').lower()
+    title = payload.get('title')
+    poster_path = payload.get('poster_path')
+    release_date = payload.get('release_date')  # Expecting YYYY-MM-DD
+
+    if request.method in {'POST', 'DELETE'}:
+        if not tmdb_id or media_type not in {'movie','tv'}:
+            return jsonify({'error': 'tmdb_id and valid media_type required'}), 400
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            if request.method == 'POST':
+                if not release_date:
+                    return jsonify({'error': 'release_date is required'}), 400
+                cur.execute(
+                    """
+                    INSERT INTO reminders (user_id, tmdb_id, media_type, title, poster_path, release_date)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (user_id, media_type, tmdb_id)
+                    DO UPDATE SET title = EXCLUDED.title,
+                                  poster_path = EXCLUDED.poster_path,
+                                  release_date = EXCLUDED.release_date,
+                                  notified = FALSE,
+                                  created_at = CURRENT_TIMESTAMP
+                    """,
+                    (user_id, tmdb_id, media_type, title, poster_path, release_date)
+                )
+            else:  # DELETE
+                cur.execute(
+                    "DELETE FROM reminders WHERE user_id = %s AND tmdb_id = %s AND media_type = %s",
+                    (user_id, tmdb_id, media_type)
+                )
+        conn.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/me/reminders/process', methods=['POST'])
+@login_required
+def process_due_reminders():
+    """Create notifications for any reminders whose release_date is today or past and not yet notified."""
+    user_id = _uuid_str(current_user.id)
+    today = date.today()
+
+    created = 0
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT tmdb_id, media_type, title, poster_path, release_date
+                FROM reminders
+                WHERE user_id = %s AND notified = FALSE AND release_date <= %s
+                """,
+                (user_id, today)
+            )
+            due_rows = cur.fetchall()
+
+            for r in due_rows:
+                message = f"{r['title'] or 'A title'} is now available"
+                cur.execute(
+                    """
+                    INSERT INTO notifications (user_id, title, message, media_type, tmdb_id, poster_path, notification_type)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (user_id, r['title'], message, r['media_type'], r['tmdb_id'], r['poster_path'], 'new_movie' if r['media_type']=='movie' else 'hot_show')
+                )
+                cur.execute(
+                    "UPDATE reminders SET notified = TRUE WHERE user_id = %s AND media_type = %s AND tmdb_id = %s",
+                    (user_id, r['media_type'], r['tmdb_id'])
+                )
+                created += 1
+        conn.commit()
+
+    return jsonify({'success': True, 'notifications_created': created})
+
+@app.route('/api/notifications/<notification_id>/mark-read', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    """Mark a notification as read"""
+    user_id = _uuid_str(current_user.id)
+    
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE notifications SET is_read = TRUE WHERE id = %s AND user_id = %s",
+                (notification_id, user_id)
+            )
+            conn.commit()
+    
+    return jsonify({'success': True})
+
+@app.route('/api/notifications/mark-all-read', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    """Mark all notifications as read"""
+    user_id = _uuid_str(current_user.id)
+    
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE notifications SET is_read = TRUE WHERE user_id = %s",
+                (user_id,)
+            )
+            conn.commit()
+    
+    return jsonify({'success': True})
+
+@app.route('/api/notifications/<notification_id>', methods=['DELETE'])
+@login_required
+def delete_notification(notification_id):
+    """Delete a notification"""
+    user_id = _uuid_str(current_user.id)
+    
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM notifications WHERE id = %s AND user_id = %s",
+                (notification_id, user_id)
+            )
+            conn.commit()
+    
+    return jsonify({'success': True})
+
+@app.route('/api/notification-settings', methods=['GET', 'POST'])
+@login_required
+def notification_settings():
+    """Get or update user notification settings"""
+    user_id = _uuid_str(current_user.id)
+    
+    if request.method == 'GET':
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT * FROM notification_settings WHERE user_id = %s",
+                    (user_id,)
+                )
+                settings = cur.fetchone()
+                
+                if not settings:
+                    # Create default settings
+                    cur.execute(
+                        """
+                        INSERT INTO notification_settings (user_id)
+                        VALUES (%s)
+                        RETURNING *
+                        """,
+                        (user_id,)
+                    )
+                    settings = cur.fetchone()
+                    conn.commit()
+        
+        return jsonify(settings)
+    
+    else:  # POST
+        data = request.get_json()
+        
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO notification_settings (user_id, new_movies_enabled, hot_shows_enabled, trending_enabled, email_notifications, push_notifications)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (user_id)
+                    DO UPDATE SET
+                        new_movies_enabled = EXCLUDED.new_movies_enabled,
+                        hot_shows_enabled = EXCLUDED.hot_shows_enabled,
+                        trending_enabled = EXCLUDED.trending_enabled,
+                        email_notifications = EXCLUDED.email_notifications,
+                        push_notifications = EXCLUDED.push_notifications,
+                        updated_at = CURRENT_TIMESTAMP
+                    """,
+                    (
+                        user_id,
+                        data.get('new_movies_enabled', True),
+                        data.get('hot_shows_enabled', True),
+                        data.get('trending_enabled', True),
+                        data.get('email_notifications', False),
+                        data.get('push_notifications', True)
+                    )
+                )
+                conn.commit()
+        
+        return jsonify({'success': True})
+
+@app.route('/api/admin/fetch-tmdb-notifications', methods=['POST'])
+@login_required
+def fetch_tmdb_notifications():
+    """Fetch new notifications from TMDB API"""
+    if not current_user.is_authenticated:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user_id = _uuid_str(current_user.id)
+    
+    # Get user notification settings
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM notification_settings WHERE user_id = %s",
+                (user_id,)
+            )
+            settings = cur.fetchone()
+    
+    if not settings:
+        return jsonify({'error': 'Notification settings not found'}), 404
+    
+    new_notifications = []
+    tmdb_api_key = os.environ.get('TMDB_API_KEY')
+    
+    if not tmdb_api_key:
+        return jsonify({'error': 'TMDB API key not configured'}), 500
+    
+    # Fetch new movies
+    if settings.get('new_movies_enabled', True):
+        try:
+            movie_url = f"https://api.themoviedb.org/3/movie/now_playing?api_key={tmdb_api_key}&language=en-US&page=1"
+            response = requests.get(movie_url)
+            if response.status_code == 200:
+                movies_data = response.json()
+                for movie in movies_data.get('results', [])[:5]:  # Limit to 5 movies
+                    notification = {
+                        'title': movie.get('title', 'New Movie'),
+                        'message': f"{movie.get('title', 'Movie')} is now available",
+                        'media_type': 'movie',
+                        'tmdb_id': movie.get('id'),
+                        'poster_path': movie.get('poster_path'),
+                        'notification_type': 'new_movie'
+                    }
+                    new_notifications.append(notification)
+        except Exception as e:
+            print(f"Error fetching new movies: {e}")
+    
+    # Fetch hot shows
+    if settings.get('hot_shows_enabled', True):
+        try:
+            tv_url = f"https://api.themoviedb.org/3/trending/tv/week?api_key={tmdb_api_key}&language=en-US"
+            response = requests.get(tv_url)
+            if response.status_code == 200:
+                tv_data = response.json()
+                for show in tv_data.get('results', [])[:5]:  # Limit to 5 shows
+                    notification = {
+                        'title': show.get('name', 'Hot Show'),
+                        'message': f"{show.get('name', 'Show')} is trending now",
+                        'media_type': 'tv',
+                        'tmdb_id': show.get('id'),
+                        'poster_path': show.get('poster_path'),
+                        'notification_type': 'hot_show'
+                    }
+                    new_notifications.append(notification)
+        except Exception as e:
+            print(f"Error fetching hot shows: {e}")
+    
+    # Save notifications to database
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            for notification in new_notifications:
+                cur.execute(
+                    """
+                    INSERT INTO notifications (user_id, title, message, media_type, tmdb_id, poster_path, notification_type)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        user_id,
+                        notification['title'],
+                        notification['message'],
+                        notification['media_type'],
+                        notification['tmdb_id'],
+                        notification['poster_path'],
+                        notification['notification_type']
+                    )
+                )
+            conn.commit()
+    
+    return jsonify({
+        'success': True,
+        'notifications_added': len(new_notifications),
+        'notifications': new_notifications
+    })
+
 # For Vercel deployment
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5002)

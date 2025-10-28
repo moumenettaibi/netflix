@@ -1,0 +1,549 @@
+/* --- NEW & HOT PAGE STYLES --- */
+
+#new-hot-main {
+    padding-top: 20px;
+    min-height: 100vh;
+    background-color: #0D0D0D;
+}
+
+.new-hot-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 50px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .new-hot-container {
+        padding: 0 20px;
+    }
+    
+    /* Ensure header matches page background on mobile */
+    header {
+        background-color: #0D0D0D;
+    }
+    
+    /* Make sure the mobile page title is visible */
+    .mobile-page-title {
+        color: #ffffff;
+    }
+}
+
+.new-hot-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.new-hot-header h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+    margin: 0 0 20px 0;
+}
+
+/* Unified Filter Tab Styles for both mobile and desktop */
+.filter-tabs {
+    display: flex;
+    gap: 10px; /* Spacing between tabs */
+    overflow-x: auto; /* Make it scrollable */
+    padding: 10px 0;
+    background-color: transparent; /* Remove the group background */
+    border-radius: 0;
+    /* Hide scrollbar */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.filter-tabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, and Opera */
+}
+
+
+.filter-tab {
+    flex: 0 0 auto; /* Prevent shrinking */
+    background-color: #0D0D0D; /* Black background for each tab */
+    border: 1px solid #333;
+    border-radius: 25px;
+    padding: 10px 20px;
+    color: var(--text-secondary-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.filter-tab.active {
+    background-color: #ffffff; /* White background for active tab */
+    color: #000000; /* Black text for active tab */
+    border-color: #ffffff;
+    font-weight: 600;
+}
+
+.filter-tab:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+.new-hot-content {
+    position: relative;
+}
+
+.content-section {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.content-section.active {
+    display: block;
+    opacity: 1;
+}
+
+.section-content {
+    width: 100%;
+}
+
+.content-scroll {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 50px 20px;
+    width: 100%;
+    padding: 20px 0;
+}
+
+.content-scroll .poster-card {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+/* --- TRAILER STYLES FOR COMING SOON --- */
+.trailer-container {
+    position: relative;
+    width: 100%;
+    height: 360px;
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: #000;
+}
+
+.trailer-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    pointer-events: none; /* Prevent interaction with iframe */
+}
+
+.trailer-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%);
+    padding: 20px;
+    color: white;
+}
+
+.trailer-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.trailer-info p {
+    margin: 0 0 8px 0;
+    font-size: 0.85rem;
+    opacity: 0.9;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.source-badge {
+    display: inline-block;
+    background-color: var(--netflix-red);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- CARD STYLES --- */
+.poster-card {
+    width: 240px;
+    height: 360px;
+    border-radius: 4px;
+    overflow: visible;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.content-scroll>.poster-card {
+    margin-right: 10px;
+}
+
+/* Special styling for coming soon section - horizontal layout stacked vertically */
+#coming-soon-section .poster-card, #everyone-watching-section .poster-card {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    aspect-ratio: 16/9;
+}
+
+#top-10-tv-section .poster-card, #top-10-movies-section .poster-card {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2/3;
+}
+
+/* Remove giant number styles */
+.ranked-item-container {
+    display: contents; /* Make the container behave as if it's not there */
+}
+.rank-number {
+    display: none;
+}
+
+.poster-card {
+    position: relative;
+    overflow: visible;
+}
+
+.rank-number-mobile {
+    position: absolute;
+    bottom: -20px;
+    left: -20px;
+    font-size: 6rem;
+    font-weight: 800;
+    color: #000;
+    -webkit-text-stroke: 2px #fff;
+    text-stroke: 2px #fff;
+    z-index: 1;
+    line-height: 1;
+}
+
+@media (max-width: 768px) {
+    .content-scroll {
+        grid-template-columns: 1fr; /* Single column on mobile */
+    }
+}
+
+#coming-soon-section .poster-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+#coming-soon-section .poster-card .poster-with-play {
+    height: 200px;
+    position: relative;
+}
+
+#coming-soon-section .poster-card .poster-with-play img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+#coming-soon-section .poster-card:hover .poster-with-play img {
+    transform: scale(1.05);
+}
+
+#coming-soon-section .play-overlay {
+    background: linear-gradient(45deg, rgba(0,0,0,0.1) 0%, rgba(229,9,20,0.1) 100%);
+    backdrop-filter: blur(2px);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+#coming-soon-section .play-overlay:hover {
+    background: linear-gradient(45deg, rgba(229,9,20,0.3) 0%, rgba(229,9,20,0.5) 100%);
+    border-color: rgba(255,255,255,0.5);
+    transform: scale(1.1);
+}
+
+#coming-soon-section .play-trailer-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#coming-soon-section .play-trailer-btn svg {
+    width: 28px;
+    height: 28px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    transition: transform 0.2s ease;
+}
+
+#coming-soon-section .play-trailer-btn:hover svg {
+    transform: scale(1.1);
+}
+
+/* --- POSTER WITH PLAY BUTTON STYLES --- */
+.poster-with-play {
+    position: relative;
+    width: 100%;
+    height: 360px;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.poster-with-play img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.play-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.poster-with-play:hover .play-overlay {
+    opacity: 1;
+}
+
+.play-trailer-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s ease;
+}
+
+.play-trailer-btn:hover {
+    transform: scale(1.1);
+}
+
+.play-trailer-btn svg {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* --- TRAILER MODAL STYLES --- */
+.trailer-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.9);
+}
+
+.trailer-modal.active {
+    display: flex;
+}
+
+.trailer-modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.trailer-modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 1200px;
+    background-color: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+#trailer-modal-player {
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    position: relative;
+}
+
+#trailer-modal-player iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.trailer-modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10001;
+    transition: background-color 0.2s ease;
+}
+
+.trailer-modal-close:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.trailer-modal-close svg {
+    fill: white;
+    width: 24px;
+    height: 24px;
+}
+
+/* --- PHONE CARD STYLES --- */
+@media (max-width: 768px) {
+    .phone-card {
+        width: 100%;
+        margin-bottom: 40px;
+    }
+
+    .card-poster {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .card-poster .poster-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .card-poster .play-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .card-poster .play-trailer-btn {
+        background: none;
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-poster .play-trailer-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: white;
+    }
+
+    .in-place-player {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2; /* Above poster image */
+    }
+
+    .in-place-player iframe {
+        width: 100%;
+        height: 100%;
+    }
+
+    .card-info {
+        padding: 15px 0;
+    }
+
+    .card-title {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: white;
+        margin: 0 0 8px 0;
+    }
+
+    .coming-date {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #aaa;
+        margin: 0 0 10px 0;
+    }
+
+    .card-description {
+        font-size: 1rem;
+        color: #aaa;
+        line-height: 1.5;
+        margin: 0 0 15px 0;
+    }
+
+    .remind-me-btn {
+    background-color: #222;
+    border: 1px solid #444;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.remind-me-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.rank-number-mobile {
+        position: absolute;
+        bottom: -20px;
+        left: -20px;
+        font-size: 6rem;
+        font-weight: 800;
+        color: #000;
+        -webkit-text-stroke: 2px #fff;
+        text-stroke: 2px #fff;
+        z-index: 1;
+        line-height: 1;
+    }
+}
