@@ -107,10 +107,10 @@
 
 .content-scroll {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-    gap: 50px 20px;
+    grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
+    gap: 40px 24px;
     width: 100%;
-    padding: 20px 0;
+    padding: 24px 0 40px;
 }
 
 .content-scroll .poster-card {
@@ -424,126 +424,108 @@
     height: 24px;
 }
 
-/* --- PHONE CARD STYLES --- */
-@media (max-width: 768px) {
-    .phone-card {
-        width: 100%;
-        margin-bottom: 40px;
-    }
+/* --- UNIFIED CARD STYLES (DESKTOP + MOBILE) --- */
+.phone-card {
+    width: 100%;
+}
 
-    .card-poster {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 16 / 9;
-        border-radius: 8px;
-        overflow: hidden;
-        position: relative;
-    }
+.card-poster {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
 
-    .card-poster .poster-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
+.card-poster .poster-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
-    .card-poster .play-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: rgba(0, 0, 0, 0.3);
-    }
+.card-poster .play-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.3);
+}
 
-    .card-poster .play-trailer-btn {
-        background: none;
-        border: 2px solid white;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+.card-poster .play-trailer-btn {
+    background: none;
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    .card-poster .play-trailer-btn svg {
-        width: 24px;
-        height: 24px;
-        fill: white;
-    }
+.card-poster .play-trailer-btn svg {
+    width: 26px;
+    height: 26px;
+    fill: white;
+}
 
-    .in-place-player {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 2; /* Above poster image */
-    }
+.in-place-player {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
 
-    .in-place-player iframe {
-        width: 100%;
-        height: 100%;
-    }
+.in-place-player iframe { width: 100%; height: 100%; }
 
-    .card-info {
-        padding: 15px 0;
-    }
+.card-info { padding: 16px 0; }
 
-    .card-title {
-        font-size: 1.4rem;
-        font-weight: bold;
-        color: white;
-        margin: 0 0 8px 0;
-    }
+.card-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+    margin: 0 0 8px 0;
+}
 
-    .coming-date {
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: #aaa;
-        margin: 0 0 10px 0;
-    }
+.coming-date {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ccc;
+    margin: 0 0 10px 0;
+}
 
-    .card-description {
-        font-size: 1rem;
-        color: #aaa;
-        line-height: 1.5;
-        margin: 0 0 15px 0;
-    }
+.card-description {
+    font-size: 1rem;
+    color: #aaa;
+    line-height: 1.6;
+    margin: 0 0 16px 0;
+}
 
-    .remind-me-btn {
+.remind-me-btn {
     background-color: #222;
     border: 1px solid #444;
     color: white;
-    padding: 10px 15px;
+    padding: 10px 16px;
     border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    font-size: 0.95rem;
+    font-weight: 600;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
 }
 
-.remind-me-btn svg {
-    width: 20px;
-    height: 20px;
-}
+.remind-me-btn svg { width: 20px; height: 20px; }
 
-.rank-number-mobile {
-        position: absolute;
-        bottom: -20px;
-        left: -20px;
-        font-size: 6rem;
-        font-weight: 800;
-        color: #000;
-        -webkit-text-stroke: 2px #fff;
-        text-stroke: 2px #fff;
-        z-index: 1;
-        line-height: 1;
-    }
+@media (max-width: 768px) {
+    .content-scroll { grid-template-columns: 1fr; gap: 30px 16px; padding: 16px 0 30px; }
+    .card-title { font-size: 1.4rem; }
+    .remind-me-btn { font-size: 0.9rem; padding: 10px 15px; }
 }

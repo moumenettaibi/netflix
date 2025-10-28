@@ -577,42 +577,84 @@
             updateAllButtons(normalizedItem.id, normalizedItem.media_type);
         }
 
-        // --- PLAYER MODAL LOGIC ---
-        function openPlayerModal(url) {
-            const playerModal = document.getElementById('player-modal');
-            const playerContainer = document.getElementById('player-container');
-            if (playerContainer && playerModal) {
-                playerContainer.innerHTML = '';
-                const loader = document.createElement('div');
-                loader.className = 'loader';
-                loader.style.position = 'absolute';
-                loader.style.left = '50%';
-                loader.style.top = '50%';
-                loader.style.transform = 'translate(-50%, -50%)';
-                playerContainer.appendChild(loader);
+        // Use global openPlayerModal from script.js if available; wrap with a robust fallback
+        (function ensureOpenPlayerModalWrapper() {
+            const baseOpen = typeof window.openPlayerModal === 'function' ? window.openPlayerModal : null;
+            window.openPlayerModal = function(url, mediaType, itemId) {
+                try { if (baseOpen) baseOpen(url, mediaType, itemId); } catch (_) { /* ignore base errors */ }
 
-                const iframe = document.createElement('iframe');
-                iframe.src = url;
-                iframe.allow = 'autoplay; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.onload = () => { loader.remove(); };
-                iframe.onerror = () => {
-                    loader.remove();
-                    const fallback = document.createElement('div');
-                    fallback.style.color = '#fff';
-                    fallback.style.textAlign = 'center';
-                    fallback.style.paddingTop = '20vh';
-                    fallback.innerHTML = `Player failed to load. <a style="color:#fff;text-decoration:underline" href="${url}" target="_blank">Open in new tab</a>`;
-                    playerContainer.appendChild(fallback);
-                };
-                playerContainer.appendChild(iframe);
+                const playerModal = document.getElementById('player-modal');
+                const playerContainer = document.getElementById('player-container');
+                if (!playerModal || !playerContainer) return;
+
+                // If the modal isn't visible yet, or iframe not mounted, force-show with a safe fallback
+                const hasIframe = !!playerContainer.querySelector('iframe');
+                if (!hasIframe) {
+                    playerContainer.innerHTML = '';
+                    const loader = document.createElement('div');
+                    loader.className = 'loader';
+                    loader.style.position = 'absolute';
+                    loader.style.left = '50%';
+                    loader.style.top = '50%';
+                    loader.style.transform = 'translate(-50%, -50%)';
+                    playerContainer.appendChild(loader);
+
+                    const iframe = document.createElement('iframe');
+                    iframe.src = url;
+                    iframe.allow = 'autoplay; fullscreen';
+                    iframe.allowFullscreen = true;
+                    iframe.onload = () => { loader.remove(); };
+                    iframe.onerror = () => {
+                        loader.remove();
+                        const fallback = document.createElement('div');
+                        fallback.style.color = '#fff';
+                        fallback.style.textAlign = 'center';
+                        fallback.style.paddingTop = '20vh';
+                        fallback.innerHTML = `Player failed to load. <a style="color:#fff;text-decoration:underline" href="${url}" target="_blank">Open in new tab</a>`;
+                        playerContainer.appendChild(fallback);
+                    };
+                    playerContainer.appendChild(iframe);
+
+                    // Add Next Episode handling when using fallback (mirror main page)
+                    window.addEventListener('message', async (event) => {
+                        const ifr = playerContainer.querySelector('iframe');
+                        if (!ifr || event.source !== ifr.contentWindow) return;
+                        if (event.data && event.data.type === 'episodeEnded' && mediaType === 'tv' && itemId) {
+                            const nextEpisodeButton = document.createElement('button');
+                            nextEpisodeButton.id = 'next-episode-btn';
+                            nextEpisodeButton.textContent = 'Next Episode';
+                            nextEpisodeButton.onclick = async () => {
+                                try {
+                                    const parts = (url || '').split('/');
+                                    const currentSeason = parts.length > 4 ? parts[4] : '1';
+                                    const currentEpisode = parts.length > 5 ? parts[5] : '1';
+                                    const nextEpisodeNumber = parseInt(currentEpisode, 10) + 1;
+                                    const seasonsUrl = `https://api.themoviedb.org/3/tv/${itemId}?api_key=${apiKey}`;
+                                    const seasonsData = await fetchData(seasonsUrl);
+                                    const currentSeasonData = seasonsData?.seasons?.find(s => String(s.season_number) === String(currentSeason));
+                                    if (currentSeasonData && nextEpisodeNumber <= currentSeasonData.episode_count) {
+                                        const nextEpisodeUrl = `${playerBaseUrl}/tv/${itemId}/${currentSeason}/${nextEpisodeNumber}`;
+                                        openPlayerModal(nextEpisodeUrl, mediaType, itemId);
+                                    } else {
+                                        closePlayerModal();
+                                    }
+                                } catch (_) {
+                                    closePlayerModal();
+                                }
+                            };
+                            if (!playerContainer.querySelector('#next-episode-btn')) {
+                                playerContainer.appendChild(nextEpisodeButton);
+                            }
+                        }
+                    });
+                }
 
                 playerModal.classList.add('active');
                 document.body.classList.add('modal-open');
-            }
-        }
+            };
+        })();
 
-        function closePlayerModal() {
+        window.closePlayerModal = window.closePlayerModal || function() {
             const playerModal = document.getElementById('player-modal');
             const playerContainer = document.getElementById('player-container');
             if (playerContainer && playerModal) {
@@ -620,7 +662,7 @@
                 playerContainer.innerHTML = '';
                 document.body.classList.remove('modal-open');
             }
-        }
+        };
 
         // --- INFO MODAL LOGIC ---
         async function openInfoModal(mediaType, itemId) {
@@ -707,7 +749,7 @@
                         <div class="modal-content-overlay">
                             <h2 class="modal-title">${title}</h2>
                             <div class="modal-action-buttons">
-                                <a href="${playerUrl}" class="modal-play-btn js-play-trigger">${playIcon} Play</a>
+                                <a href="${playerUrl}" class="modal-play-btn js-play-trigger" data-id="${itemId}" data-type="${mediaType}">${playIcon} Play</a>
                                 <button class="modal-icon-btn add-list-btn ${addedClass}" title="Add to My List" onclick="addToMyList('${itemId}', '${mediaType}', this)">${addListIcon}</button>
                                 <button class="modal-icon-btn like-btn ${likedClass}" title="Like" onclick="addToLikedList('${itemId}', '${mediaType}', this)">${likeIcon}</button>
                             </div>
@@ -889,8 +931,30 @@
 
             if (playButton) {
                 event.preventDefault();
-                const playerUrl = playButton.getAttribute('href');
-                if (playerUrl) {
+
+                // If info modal trailer is playing, pause it first (parity with main page)
+                const infoModal = document.getElementById('info-modal');
+                if (infoModal && infoModal.classList.contains('active')) {
+                    const trailerIframe = infoModal.querySelector('#modal-trailer-video');
+                    if (trailerIframe && trailerIframe.contentWindow) {
+                        trailerIframe.contentWindow.postMessage(JSON.stringify({
+                            event: 'command',
+                            func: 'pauseVideo',
+                            args: []
+                        }), '*');
+                    }
+                }
+
+                const playerUrl = playButton.getAttribute('href') || playButton.dataset.url;
+                // Find nearest element that carries the media identifiers (works for both cards and modal button)
+                const mediaContainer = playButton.closest('[data-id][data-type]');
+
+                if (playerUrl && mediaContainer) {
+                    const { id, type } = mediaContainer.dataset;
+                    closeInfoModal();
+                    openPlayerModal(playerUrl, type, id);
+                } else if (playerUrl) {
+                    // Fallback: just open by URL
                     closeInfoModal();
                     openPlayerModal(playerUrl);
                 }
@@ -951,6 +1015,8 @@
         let searchTimeout;
 
         function setupSearch() {
+            // Only enable desktop inline search on screens wider than 480px
+            if (window.innerWidth <= 480) return;
             searchIconTrigger.addEventListener('click', toggleSearch);
             closeSearchIcon.addEventListener('click', toggleSearch);
 
@@ -1218,6 +1284,11 @@
                         window.closeMobileMenu();
                     }
                 });
+            }
+
+            // Ensure mobile search modal wiring runs even if script.js loaded after DOMContentLoaded
+            if (typeof window.setupMobileSearch === 'function') {
+                try { window.setupMobileSearch(); } catch (_) {}
             }
 
             // Mark all current notifications as read when user clicks See All

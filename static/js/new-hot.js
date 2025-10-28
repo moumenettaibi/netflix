@@ -92,40 +92,8 @@ function nh_createPhoneCard(item, mediaType, isComingSoon) {
 }
 
 function nh_createPosterCard(item, mediaType, isComingSoon = false) {
-    // Use the new phone card structure for all items on mobile
-    if (window.innerWidth <= 768) {
-        return nh_createPhoneCard(item, mediaType, isComingSoon);
-    }
-
-    // Fallback to original poster card for larger screens
-    if (!item.poster_path) return null;
-    const posterElement = document.createElement('div');
-    posterElement.classList.add('poster-card');
-    posterElement.dataset.id = item.id;
-    const resolvedType = (mediaType && mediaType !== 'mixed')
-        ? mediaType
-        : (item.media_type || (item.title ? 'movie' : 'tv'));
-    posterElement.dataset.type = resolvedType;
-
-    if (item.is_coming_soon) {
-        const imageUrl = item.backdrop_path ? `${backdropBaseUrl}${item.backdrop_path}` : `${posterBaseUrl}${item.poster_path}`;
-        posterElement.innerHTML = `
-            <div class="poster-with-play">
-                <img src="${imageUrl}" alt="${item.title || item.name}">
-                <div class="play-overlay">
-                    <button class="play-trailer-btn" data-trailer="${item.trailer_key || ''}" data-title="${item.title || item.name}">
-                        <svg viewBox="0 0 24 24" width="48" height="48">
-                            <circle cx="12" cy="12" r="11" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="2"/>
-                            <path d="M8 5v14l11-7z" fill="white"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>`;
-    } else {
-        posterElement.innerHTML = `
-            <img src="${posterBaseUrl}${item.poster_path}" alt="${item.title || item.name}">`;
-    }
-    return posterElement;
+    // Use the unified card layout (same as mobile) on all viewports for consistency
+    return nh_createPhoneCard(item, mediaType, isComingSoon);
 }
 
 function nh_displayContentRow(items, container, mediaType, isRankedList = false, isComingSoon = false) {

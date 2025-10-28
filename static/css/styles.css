@@ -120,6 +120,13 @@ header.scrolled {
     display: none;
 }
 
+/* Hide bell on phones */
+@media (max-width: 480px) {
+    .nav-notification-btn {
+        display: none !important;
+    }
+}
+
 .header-logo {
     height: 35px;
     width: auto;

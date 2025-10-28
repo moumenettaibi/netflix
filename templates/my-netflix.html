@@ -9,10 +9,10 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='netflix-logo.png') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='netflix-logo.png') }}">
     <link rel="icon" href="{{ url_for('static', filename='netflix-logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/my-netflix.css') }}">
     <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
     <title>My Netflix</title>
-    
 </head>
 
 {% macro empty_state(message, action_text) -%}
@@ -64,11 +64,12 @@
                     <li><a href="/browse">Home</a></li>
                     <li id="nav-shows"><a href="/browse">Shows</a></li>
                     <li id="nav-movies"><a href="/browse">Movies</a></li>
+                    <li><a href="/new-hot">Latest</a></li>
                     <li class="active"><a href="/my-netflix">My Netflix</a></li>
                 </ul>
             </nav>
         </div>
-        <div class="header-right">
+        <div class="header-right"> 
             <div id="search-bar-container" class="search-bar-container">
                 <svg class="search-icon-input" viewBox="0 0 24 24">
                     <path
@@ -83,6 +84,10 @@
                     d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z">
                 </path>
             </svg>
+            <button class="nav-notification-btn" id="global-notification-btn" title="Notifications" onclick="window.location.href='/my-netflix/notifications'">
+                <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S10.5 3.17 10.5 4v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path></svg>
+                <span class="nav-notification-badge" id="global-notification-badge">0</span>
+            </button>
             <button class="mobile-menu-btn" id="mobile-menu-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
@@ -237,6 +242,27 @@
 
     <div id="toast" class="toast"></div>
 
+    <!-- Mobile Search Popup -->
+    <div id="mobile-search-popup" class="mobile-search-popup">
+        <div class="mobile-search-header">
+            <button class="mobile-search-back-btn" id="mobile-search-back-btn">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path>
+                </svg>
+            </button>
+            <div class="mobile-search-input-container">
+                <svg class="mobile-search-icon" viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                </svg>
+                <input type="text" id="mobile-search-input" class="mobile-search-input" placeholder="Search shows, movies..." autocomplete="off">
+            </div>
+        </div>
+        <div class="mobile-search-results">
+            <div class="mobile-search-title">Recommended TV Shows & Movies</div>
+            <div id="mobile-search-results-list"></div>
+        </div>
+    </div>
+
     <!-- Mobile Menu Popup -->
     <div id="mobile-menu-popup" class="mobile-menu-popup">
         <div class="mobile-menu-content">
@@ -297,6 +323,7 @@
     </nav>
 
     <script id="my-netflix-payload" type="application/json">{{ (initial_payload or {}) | tojson }}</script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script src="{{ url_for('static', filename='js/my-netflix.js') }}"></script>
 </body>
 

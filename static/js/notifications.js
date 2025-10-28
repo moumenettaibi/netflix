@@ -295,6 +295,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Ensure mobile search modal wiring runs even if script.js loaded after DOMContentLoaded
+    if (typeof window.setupMobileSearch === 'function') {
+        try { window.setupMobileSearch(); } catch (_) {}
+    }
 });
 
 // Re-use existing modal and player functions from script.js

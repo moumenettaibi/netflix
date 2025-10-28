@@ -366,6 +366,53 @@
             display: none;
         }
 
+        /* Hide Notifications and Downloads sections on desktop */
+        @media (min-width: 481px) {
+            .notifications-section,
+            .downloads-section {
+                display: none !important;
+            }
+        }
+
+        /* Match Home header bell styles */
+        .nav-notification-btn {
+            position: relative;
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-notification-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: #ffffff;
+        }
+
+        .nav-notification-badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background-color: var(--netflix-red);
+            color: white;
+            border-radius: 10px;
+            padding: 1px 5px;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.2;
+            min-width: 18px;
+            text-align: center;
+            display: none;
+        }
+
+        /* Hide bell on phones */
+        @media (max-width: 480px) {
+            .nav-notification-btn { display: none !important; }
+        }
+
         /* Desktop card sections (mirror mobile style with desktop spacing) */
         .mobile-card-section {
             background-color: rgba(20, 20, 20, 0.95);
