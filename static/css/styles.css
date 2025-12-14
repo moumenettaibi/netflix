@@ -1377,6 +1377,33 @@ main {
         left: 20px !important;
     }
 
+    /* Fix back button positioning to prevent pushing content down */
+    .modal-back-btn {
+        position: absolute;
+        top: 15px;
+        /* Adjust based on safe area if needed, but 15px is good start */
+        left: 15px;
+        z-index: 20;
+        /* Ensure above video and black bar */
+        background: rgba(0, 0, 0, 0.5);
+        /* Optional: background circle */
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .modal-back-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: white;
+    }
+
     /* --- Mobile Search Popup Styles (IMPROVED) --- */
     .mobile-search-popup {
         position: fixed;
@@ -2825,4 +2852,105 @@ main {
     height: 40px;
     width: 50%;
     margin-bottom: 20px;
+}
+
+/* --- ENHANCED EPISODE LIST STYLES --- */
+.episode-item {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 10px;
+    /* Reduced padding */
+    border-bottom: none;
+    /* Removed border */
+    background-color: #000;
+}
+
+.episode-primary-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    /* Force left align */
+    gap: 15px;
+    margin-bottom: 4px;
+    /* Reduced margin to bring overview closer */
+    width: 100%;
+    text-align: left;
+}
+
+.episode-thumbnail-wrapper {
+    position: relative;
+    width: 140px;
+    flex-shrink: 0;
+    aspect-ratio: 16/9;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.episode-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.episode-play-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    opacity: 0.9;
+}
+
+.episode-play-overlay svg {
+    width: 32px;
+    height: 32px;
+    fill: white;
+}
+
+.episode-meta {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.episode-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 4px 0;
+    color: white;
+}
+
+.episode-runtime {
+    font-size: 0.85rem;
+    color: #a3a3a3;
+}
+
+.episode-download-btn {
+    background: none;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.episode-download-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: white;
+}
+
+.episode-overview p {
+    font-size: 0.9rem;
+    color: #d2d2d2;
+    margin: 0;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
 }

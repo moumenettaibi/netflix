@@ -646,14 +646,21 @@ async function openInfoModal(mediaType, itemId) {
                         const episodePlayerUrl = `${playerBaseUrl}/tv/${itemId}/${seasonNumber}/${episode.episode_number}`;
                         return `
                             <div class="episode-item">
-                                <img src="${backdropBaseUrl}${episode.still_path}" alt="${episode.name}">
-                                <div class="episode-info">
-                                    <h4>${episode.episode_number}. ${episode.name}</h4>
-                                    <p>${episode.overview}</p>
+                                <div class="episode-primary-row">
+                                    <div class="episode-thumbnail-wrapper">
+                                        <img src="${backdropBaseUrl}${episode.still_path}" alt="${episode.name}" class="episode-thumbnail">
+                                        <a href="${episodePlayerUrl}" class="episode-play-overlay js-play-trigger">
+                                            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> 
+                                        </a>
+                                    </div>
+                                    <div class="episode-meta">
+                                        <h4 class="episode-title">${episode.episode_number}. ${episode.name}</h4>
+                                        <span class="episode-runtime">${episode.runtime ? episode.runtime + 'm' : ''}</span>
+                                    </div>
                                 </div>
-                                <a href="${episodePlayerUrl}" class="episode-play-btn js-play-trigger" title="Play Episode">
-                                    <svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"></path></svg>
-                                </a>
+                                <div class="episode-overview">
+                                    <p>${episode.overview || ''}</p>
+                                </div>
                             </div>
                         `;
                     }).join('');
