@@ -17,12 +17,12 @@
     .new-hot-container {
         padding: 0 20px;
     }
-    
+
     /* Ensure header matches page background on mobile */
     header {
         background-color: #0D0D0D;
     }
-    
+
     /* Make sure the mobile page title is visible */
     .mobile-page-title {
         color: #ffffff;
@@ -45,24 +45,33 @@
 /* Unified Filter Tab Styles for both mobile and desktop */
 .filter-tabs {
     display: flex;
-    gap: 10px; /* Spacing between tabs */
-    overflow-x: auto; /* Make it scrollable */
+    gap: 10px;
+    /* Spacing between tabs */
+    overflow-x: auto;
+    /* Make it scrollable */
     padding: 10px 0;
-    background-color: transparent; /* Remove the group background */
+    background-color: transparent;
+    /* Remove the group background */
     border-radius: 0;
     /* Hide scrollbar */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    -webkit-overflow-scrolling: touch;
 }
 
 .filter-tabs::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, and Opera */
+    display: none;
+    /* Chrome, Safari, and Opera */
 }
 
 
 .filter-tab {
-    flex: 0 0 auto; /* Prevent shrinking */
-    background-color: #0D0D0D; /* Black background for each tab */
+    flex: 0 0 auto;
+    /* Prevent shrinking */
+    background-color: #0D0D0D;
+    /* Black background for each tab */
     border: 1px solid #333;
     border-radius: 25px;
     padding: 10px 20px;
@@ -75,8 +84,10 @@
 }
 
 .filter-tab.active {
-    background-color: #ffffff; /* White background for active tab */
-    color: #000000; /* Black text for active tab */
+    background-color: #ffffff;
+    /* White background for active tab */
+    color: #000000;
+    /* Black text for active tab */
     border-color: #ffffff;
     font-weight: 600;
 }
@@ -133,7 +144,8 @@
     width: 100%;
     height: 100%;
     border: none;
-    pointer-events: none; /* Prevent interaction with iframe */
+    pointer-events: none;
+    /* Prevent interaction with iframe */
 }
 
 .trailer-overlay {
@@ -141,7 +153,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 50%, transparent 100%);
     padding: 20px;
     color: white;
 }
@@ -150,14 +162,14 @@
     margin: 0 0 5px 0;
     font-size: 1rem;
     font-weight: 600;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .trailer-info p {
     margin: 0 0 8px 0;
     font-size: 0.85rem;
     opacity: 0.9;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .source-badge {
@@ -187,14 +199,16 @@
 }
 
 /* Special styling for coming soon section - horizontal layout stacked vertically */
-#coming-soon-section .poster-card, #everyone-watching-section .poster-card {
+#coming-soon-section .poster-card,
+#everyone-watching-section .poster-card {
     width: 100%;
     max-width: none;
     height: auto;
     aspect-ratio: 16/9;
 }
 
-#top-10-tv-section .poster-card, #top-10-movies-section .poster-card {
+#top-10-tv-section .poster-card,
+#top-10-movies-section .poster-card {
     width: 100%;
     height: auto;
     aspect-ratio: 2/3;
@@ -202,8 +216,10 @@
 
 /* Remove giant number styles */
 .ranked-item-container {
-    display: contents; /* Make the container behave as if it's not there */
+    display: contents;
+    /* Make the container behave as if it's not there */
 }
+
 .rank-number {
     display: none;
 }
@@ -228,7 +244,8 @@
 
 @media (max-width: 768px) {
     .content-scroll {
-        grid-template-columns: 1fr; /* Single column on mobile */
+        grid-template-columns: 1fr;
+        /* Single column on mobile */
     }
 }
 
@@ -254,9 +271,9 @@
 }
 
 #coming-soon-section .play-overlay {
-    background: linear-gradient(45deg, rgba(0,0,0,0.1) 0%, rgba(229,9,20,0.1) 100%);
+    background: linear-gradient(45deg, rgba(0, 0, 0, 0.1) 0%, rgba(229, 9, 20, 0.1) 100%);
     backdrop-filter: blur(2px);
-    border: 2px solid rgba(255,255,255,0.2);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
     width: 70px;
     height: 70px;
@@ -267,8 +284,8 @@
 }
 
 #coming-soon-section .play-overlay:hover {
-    background: linear-gradient(45deg, rgba(229,9,20,0.3) 0%, rgba(229,9,20,0.5) 100%);
-    border-color: rgba(255,255,255,0.5);
+    background: linear-gradient(45deg, rgba(229, 9, 20, 0.3) 0%, rgba(229, 9, 20, 0.5) 100%);
+    border-color: rgba(255, 255, 255, 0.5);
     transform: scale(1.1);
 }
 
@@ -384,7 +401,8 @@
 
 #trailer-modal-player {
     width: 100%;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    padding-bottom: 56.25%;
+    /* 16:9 aspect ratio */
     position: relative;
 }
 
@@ -483,9 +501,14 @@
     z-index: 2;
 }
 
-.in-place-player iframe { width: 100%; height: 100%; }
+.in-place-player iframe {
+    width: 100%;
+    height: 100%;
+}
 
-.card-info { padding: 16px 0; }
+.card-info {
+    padding: 16px 0;
+}
 
 .card-title {
     font-size: 1.5rem;
@@ -522,10 +545,61 @@
     gap: 8px;
 }
 
-.remind-me-btn svg { width: 20px; height: 20px; }
+.remind-me-btn svg {
+    width: 20px;
+    height: 20px;
+}
 
 @media (max-width: 768px) {
-    .content-scroll { grid-template-columns: 1fr; gap: 30px 16px; padding: 16px 0 30px; }
-    .card-title { font-size: 1.4rem; }
-    .remind-me-btn { font-size: 0.9rem; padding: 10px 15px; }
+    .content-scroll {
+        grid-template-columns: 1fr;
+        gap: 30px 16px;
+        padding: 16px 0 30px;
+    }
+
+    .card-title {
+        font-size: 1.4rem;
+    }
+
+    .remind-me-btn {
+        font-size: 0.9rem;
+        padding: 10px 15px;
+    }
+}
+
+/* --- SKELETON LOADERS FOR NEW & HOT --- */
+.skeleton-phone-card {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.skeleton-poster {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.skeleton-info {
+    padding: 0;
+}
+
+.skeleton-text-line {
+    height: 14px;
+    width: 100%;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.skeleton-title {
+    height: 24px;
+    width: 60%;
+    margin-bottom: 12px;
+}
+
+.skeleton-btn {
+    height: 36px;
+    width: 120px;
+    border-radius: 20px;
+    margin-top: 12px;
 }

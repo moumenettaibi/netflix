@@ -24,7 +24,7 @@ const CACHE_KEYS = {
 };
 
 function cacheWrite(key, data) {
-    try { localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
+    try { localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch (_) { }
 }
 function cacheRead(key) {
     try { const v = JSON.parse(localStorage.getItem(key) || ''); return (v && v.data) || []; } catch (_) { return []; }
@@ -192,7 +192,22 @@ function shuffleArray(array) {
 async function createAndDisplayShuffledRows() {
     const mainContainer = document.getElementById('shuffled-rows-container');
     if (!mainContainer) return; // Element not found on this page
-    mainContainer.innerHTML = '<div class="loader"></div>';
+    // Helper to create skeleton rows
+    const createSkeletonRows = () => {
+        let skeletons = '';
+        for (let i = 0; i < 3; i++) {
+            skeletons += `
+                <div class="skeleton-row-container">
+                    <div class="skeleton-row-title skeleton"></div>
+                    <div class="skeleton-row-scroll">
+                        ${Array(6).fill('<div class="skeleton-card skeleton"></div>').join('')}
+                    </div>
+                </div>`;
+        }
+        return skeletons;
+    };
+
+    mainContainer.innerHTML = createSkeletonRows();
 
     // Fetch user's location to get relevant trending data
     let countryDetails = { region: 'US', countryName: 'the U.S.' };
@@ -223,7 +238,7 @@ async function createAndDisplayShuffledRows() {
         ...customCategories.slice(0, 8).map(category => {
             let title = category.name;
             if (!title.includes('Movies') && !title.includes('Shows') && !title.includes('Dramas') && !title.includes('Pleasers') && !title.includes('Weekend')) {
-                 title = `${category.name} ${category.type === 'movie' ? 'Movies' : 'TV Shows'}`;
+                title = `${category.name} ${category.type === 'movie' ? 'Movies' : 'TV Shows'}`;
             }
             return {
                 name: title,
@@ -256,7 +271,7 @@ async function createAndDisplayShuffledRows() {
 
     // 5. Enforce the "no more than two of the same type in a row" rule for a better mix
     for (let i = 2; i < renderableRows.length; i++) {
-        if (renderableRows[i].type === renderableRows[i-1].type && renderableRows[i].type === renderableRows[i-2].type) {
+        if (renderableRows[i].type === renderableRows[i - 1].type && renderableRows[i].type === renderableRows[i - 2].type) {
             let swapIndex = -1;
             for (let j = i + 1; j < renderableRows.length; j++) {
                 if (renderableRows[j].type !== renderableRows[i].type) {
@@ -288,10 +303,26 @@ async function createAndDisplayShuffledRows() {
 async function setupHeroSection(mediaType = 'all') {
     const heroContainer = document.getElementById('hero-container');
     if (!heroContainer) return; // Element not found on this page
-    heroContainer.innerHTML = '<div class="loader"></div>';
+    const isMobile = window.innerWidth <= 480;
+
+    // Show appropriate skeleton loader for hero
+    if (isMobile) {
+        // Mobile hero skeleton (single large card)
+        heroContainer.innerHTML = `
+            <div class="skeleton-hero skeleton"></div>
+            <div style="padding: 0 15px;">
+                <div class="skeleton-row-title skeleton" style="width: 60%; margin-left: 0;"></div>
+                <div class="skeleton-row-title skeleton" style="width: 40%; height: 16px; margin-left: 0;"></div>
+            </div>
+        `;
+    } else {
+        // Desktop hero skeleton (fullscreen background)
+        heroContainer.innerHTML = `
+            <div class="skeleton-hero skeleton" style="height: 95vh; margin: 0;"></div>
+        `;
+    }
 
     try {
-        const isMobile = window.innerWidth <= 480;
         let trendingUrl;
         if (mediaType === 'all') {
             trendingUrl = `https://api.themoviedb.org/3/trending/all/day?api_key=${apiKey}&language=en-US`;
@@ -334,10 +365,10 @@ async function setupHeroSection(mediaType = 'all') {
                     </div>
                 </div>`;
             } else {
-                 const rankInType = (trendingData?.results.findIndex(item => item.id === featured.id) || 0) + 1;
-                 const mediaTypeDisplay = featuredMediaType === 'movie' ? 'Movies' : 'TV Shows';
-                 heroContainer.style.backgroundImage = `url(${backdropBaseUrl}${featured.backdrop_path})`;
-                 heroContainer.innerHTML = `
+                const rankInType = (trendingData?.results.findIndex(item => item.id === featured.id) || 0) + 1;
+                const mediaTypeDisplay = featuredMediaType === 'movie' ? 'Movies' : 'TV Shows';
+                heroContainer.style.backgroundImage = `url(${backdropBaseUrl}${featured.backdrop_path})`;
+                heroContainer.innerHTML = `
                     <div class="hero-content" data-id="${featured.id}" data-type="${featuredMediaType}">
                         <h1 class="hero-title">${featured.name || featured.title}</h1>
                         <div class="hero-rank-badge">
@@ -429,7 +460,7 @@ function closePlayerModal() {
         if (infoModal.classList.contains('active')) {
             const trailerIframe = infoModal.querySelector('#modal-trailer-video');
             if (trailerIframe) {
-                 trailerIframe.contentWindow.postMessage(JSON.stringify({
+                trailerIframe.contentWindow.postMessage(JSON.stringify({
                     event: 'command',
                     func: 'playVideo',
                     args: []
@@ -455,20 +486,29 @@ async function openInfoModal(mediaType, itemId) {
             <button class="modal-back-btn" title="Back">
                 <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path></svg>
             </button>
-            <div class="modal-media-container">
-                <div class="loader" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)"></div>
+            <div class="modal-media-container skeleton-modal-media skeleton">
                 <div class="modal-content-overlay">
-                    <h2 class="modal-title">Loading...</h2>
+                    <div class="skeleton-modal-text title skeleton"></div>
                     <div class="modal-action-buttons">
                         <a href="${playerUrl}" class="modal-play-btn js-play-trigger"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z" fill="currentColor"></path></svg>Play</a>
                     </div>
                 </div>
             </div>
             <div class="modal-body">
-                <div class="modal-metadata-row"></div>
+                <div class="modal-metadata-row">
+                    <div class="skeleton-modal-text skeleton" style="width: 100px;"></div>
+                    <div class="skeleton-modal-text skeleton" style="width: 50px;"></div>
+                </div>
                 <div class="modal-main-content-grid">
-                    <div class="modal-description"><p></p></div>
-                    <aside class="modal-meta-data"></aside>
+                    <div class="modal-description">
+                         <div class="skeleton-modal-text skeleton"></div>
+                         <div class="skeleton-modal-text skeleton"></div>
+                         <div class="skeleton-modal-text skeleton short"></div>
+                    </div>
+                    <aside class="modal-meta-data">
+                        <div class="skeleton-modal-text skeleton"></div>
+                        <div class="skeleton-modal-text skeleton"></div>
+                    </aside>
                 </div>
             </div>
         </div>`;
@@ -698,21 +738,31 @@ function closeDetailsPopup() {
 
 async function openActorWorksPopup(personId, personName) {
     const actorWorksPopup = document.getElementById('actor-works-popup');
-    actorWorksPopup.innerHTML = `<div style="position:relative; z-index:1;"><div class="loader"></div></div>`;
+    actorWorksPopup.innerHTML = `
+        <div class="actor-works-popup-content">
+            <button class="popup-close-btn">
+                <svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg>
+            </button>
+            <h2>${personName}</h2>
+            <div class="actor-works-grid">
+                ${Array(12).fill('<div class="skeleton-card skeleton"></div>').join('')}
+            </div>
+        </div>
+    `;
     actorWorksPopup.classList.add('active');
 
     const url = `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${apiKey}`;
     const data = await fetchData(url);
 
     if (!data || !data.cast) {
-         actorWorksPopup.innerHTML = `<p>Could not load works for ${personName}.</p>`;
-         return;
+        actorWorksPopup.innerHTML = `<p>Could not load works for ${personName}.</p>`;
+        return;
     }
 
     const works = data.cast
         .filter(item => item.poster_path)
         .sort((a, b) => b.popularity - a.popularity);
-    
+
     actorWorksPopup.innerHTML = `
         <div class="actor-works-popup-content">
             <button class="popup-close-btn" id="close-actor-works-popup-btn">
@@ -721,9 +771,9 @@ async function openActorWorksPopup(personId, personName) {
             <h2>${personName}</h2>
             <div class="actor-works-grid">
                 ${works.map(item => {
-                    const card = createPosterCard(item, item.media_type);
-                    return card ? card.outerHTML : '';
-                }).join('')}
+        const card = createPosterCard(item, item.media_type);
+        return card ? card.outerHTML : '';
+    }).join('')}
             </div>
         </div>
     `;
@@ -839,7 +889,7 @@ function filterContent(filter) {
 function setupMobileFiltering() {
     const mobileFilterButtons = document.querySelectorAll('.mobile-filters button');
     mobileFilterButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const buttonText = this.textContent.trim();
 
             mobileFilterButtons.forEach(btn => btn.classList.remove('active'));
@@ -886,26 +936,26 @@ function setupNavFiltering() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Global notification badge updater (desktop header)
-  const globalBadge = document.getElementById('global-notification-badge');
-  async function refreshGlobalNotificationBadge() {
-    try {
-      const res = await fetch('/api/notifications?limit=50', { credentials: 'same-origin' });
-      if (!res.ok) return;
-      const all = await res.json();
-      const unread = Array.isArray(all) ? all.filter(n => !n.is_read).length : 0;
-      if (globalBadge) {
-        if (unread > 0) {
-          globalBadge.textContent = unread > 99 ? '99+' : String(unread);
-          globalBadge.style.display = 'inline-block';
-        } else {
-          globalBadge.style.display = 'none';
-        }
-      }
-    } catch (_) { /* ignore */ }
-  }
-  refreshGlobalNotificationBadge();
-  setInterval(refreshGlobalNotificationBadge, 60000);
+    // Global notification badge updater (desktop header)
+    const globalBadge = document.getElementById('global-notification-badge');
+    async function refreshGlobalNotificationBadge() {
+        try {
+            const res = await fetch('/api/notifications?limit=50', { credentials: 'same-origin' });
+            if (!res.ok) return;
+            const all = await res.json();
+            const unread = Array.isArray(all) ? all.filter(n => !n.is_read).length : 0;
+            if (globalBadge) {
+                if (unread > 0) {
+                    globalBadge.textContent = unread > 99 ? '99+' : String(unread);
+                    globalBadge.style.display = 'inline-block';
+                } else {
+                    globalBadge.style.display = 'none';
+                }
+            }
+        } catch (_) { /* ignore */ }
+    }
+    refreshGlobalNotificationBadge();
+    setInterval(refreshGlobalNotificationBadge, 60000);
     setupMobileFiltering();
     setupNavFiltering();
     setupMobileSearch();
@@ -922,7 +972,7 @@ function setupMobileSearch() {
         return; // Elements not found on this page
     }
 
-    searchIconTrigger.addEventListener('click', function() {
+    searchIconTrigger.addEventListener('click', function () {
         if (window.innerWidth <= 480) {
             mobileSearchPopup.classList.add('active');
             document.body.classList.add('modal-open');
@@ -931,7 +981,7 @@ function setupMobileSearch() {
         }
     });
 
-    mobileSearchBackBtn.addEventListener('click', function() {
+    mobileSearchBackBtn.addEventListener('click', function () {
         mobileSearchPopup.classList.remove('active');
         document.body.classList.remove('modal-open');
         mobileSearchInput.value = '';
@@ -939,7 +989,7 @@ function setupMobileSearch() {
     });
 
     let mobileSearchTimeout;
-    mobileSearchInput.addEventListener('input', function() {
+    mobileSearchInput.addEventListener('input', function () {
         clearTimeout(mobileSearchTimeout);
         const query = this.value.trim();
 
@@ -952,7 +1002,7 @@ function setupMobileSearch() {
         }, 500);
     });
 
-    mobileSearchPopup.addEventListener('click', function(e) {
+    mobileSearchPopup.addEventListener('click', function (e) {
         if (e.target === this) {
             this.classList.remove('active');
             document.body.classList.remove('modal-open');
@@ -1038,7 +1088,7 @@ function displayMobileSearchResults(results, title) {
     }).join('');
 
     mobileSearchResultsList.querySelectorAll('.js-play-trigger').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const playerUrl = this.dataset.url;
             if (playerUrl) {
                 closeInfoModal();
@@ -1138,12 +1188,12 @@ document.addEventListener('click', function (event) {
     if (actorWorksPopup && actorWorksPopup.contains(event.target)) {
         const poster = event.target.closest('.poster-card');
         if (poster && !event.target.closest('.action-btn')) {
-              const { id, type } = poster.dataset;
-              if (id && type) {
-                  closeActorWorksPopup();
-                  closeDetailsPopup();
-                  openInfoModal(type, id);
-              }
+            const { id, type } = poster.dataset;
+            if (id && type) {
+                closeActorWorksPopup();
+                closeDetailsPopup();
+                openInfoModal(type, id);
+            }
         }
     }
 });
@@ -1301,25 +1351,25 @@ async function addToMyList(itemId, mediaType) {
 }
 
 async function addToLikedList(itemId, mediaType) {
-     const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}`;
-     const data = await fetchData(url);
-     if (!data) {
-         showToast('Error updating Liked List');
-         return;
-     }
-     let likedList = LIKED_LIST_CACHE || [];
-     const existsIndex = likedList.findIndex(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
-     if (existsIndex > -1) {
-         try { await apiSend('/api/me/likes', 'DELETE', { tmdb_id: itemId, media_type: mediaType }); } catch (e) { /* ignore */ }
-         likedList.splice(existsIndex, 1);
-         showToast(`Removed "${data.title || data.name}" from Liked List`);
-     } else {
-         data.media_type = mediaType;
-         try { await apiSend('/api/me/likes', 'POST', { tmdb_id: itemId, media_type: mediaType, data }); } catch (e) { /* ignore */ }
-         likedList.unshift(data);
-         showToast(`Added "${data.title || data.name}" to Liked List`);
-     }
-     LIKED_LIST_CACHE = likedList;
-     cacheWrite(CACHE_KEYS.LIKES, LIKED_LIST_CACHE);
-     updateAllButtons(itemId, mediaType);
+    const url = `https://api.themoviedb.org/3/${mediaType}/${itemId}?api_key=${apiKey}`;
+    const data = await fetchData(url);
+    if (!data) {
+        showToast('Error updating Liked List');
+        return;
+    }
+    let likedList = LIKED_LIST_CACHE || [];
+    const existsIndex = likedList.findIndex(item => item.id == itemId && (item.media_type || (item.title ? 'movie' : 'tv')) === mediaType);
+    if (existsIndex > -1) {
+        try { await apiSend('/api/me/likes', 'DELETE', { tmdb_id: itemId, media_type: mediaType }); } catch (e) { /* ignore */ }
+        likedList.splice(existsIndex, 1);
+        showToast(`Removed "${data.title || data.name}" from Liked List`);
+    } else {
+        data.media_type = mediaType;
+        try { await apiSend('/api/me/likes', 'POST', { tmdb_id: itemId, media_type: mediaType, data }); } catch (e) { /* ignore */ }
+        likedList.unshift(data);
+        showToast(`Added "${data.title || data.name}" to Liked List`);
+    }
+    LIKED_LIST_CACHE = likedList;
+    cacheWrite(CACHE_KEYS.LIKES, LIKED_LIST_CACHE);
+    updateAllButtons(itemId, mediaType);
 }

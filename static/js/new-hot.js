@@ -48,7 +48,7 @@ function nh_createPhoneCard(item, mediaType, isComingSoon) {
     if (isComingSoon) {
         buttonsHtml = `
             <p class="coming-date">${comingDate}</p>
-            <button class="remind-me-btn" data-id="${item.id}" data-type="${resolvedType}" data-title="${title.replace(/\"/g,'\\\"')}" data-poster="${item.poster_path || ''}" data-release="${item.release_date || item.first_air_date || ''}">
+            <button class="remind-me-btn" data-id="${item.id}" data-type="${resolvedType}" data-title="${title.replace(/\"/g, '\\\"')}" data-poster="${item.poster_path || ''}" data-release="${item.release_date || item.first_air_date || ''}">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.63 5.36 6 7.93 6 11V16L4 18V19H20V18L18 16Z" fill="white"/>
                 </svg>
@@ -136,10 +136,29 @@ function showToast(message) {
 }
 
 
+// Helper to create skeleton cards for New & Hot
+function createSkeletonCards() {
+    let skeletons = '';
+    // Show 4 skeleton cards to fill the view
+    for (let i = 0; i < 4; i++) {
+        skeletons += `
+            <div class="skeleton-phone-card">
+                <div class="skeleton-poster skeleton"></div>
+                <div class="skeleton-info">
+                    <div class="skeleton-title skeleton"></div>
+                    <div class="skeleton-text-line skeleton"></div>
+                    <div class="skeleton-text-line skeleton" style="width: 80%"></div>
+                    <div class="skeleton-btn skeleton"></div>
+                </div>
+            </div>`;
+    }
+    return skeletons;
+}
+
 // Load Coming Soon content (upcoming streaming releases)
 async function loadComingSoon() {
     const container = document.getElementById('coming-soon-content');
-    container.innerHTML = '<div class="loader"></div>';
+    container.innerHTML = createSkeletonCards();
 
     try {
         // Use Watchmode API for Netflix-only upcoming releases
@@ -222,7 +241,7 @@ async function loadComingSoon() {
         }
 
         // Sort by release date (soonest first), then by popularity
-                allUpcoming.sort((a, b) => {
+        allUpcoming.sort((a, b) => {
             const dateA = new Date(a.release_date || a.first_air_date || '2025-01-01');
             const dateB = new Date(b.release_date || b.first_air_date || '2025-01-01');
 
@@ -234,7 +253,7 @@ async function loadComingSoon() {
             return b.popularity - a.popularity;
         });
 
-                if (allUpcoming.length > 0) {
+        if (allUpcoming.length > 0) {
             nh_displayContentRow(allUpcoming.slice(0, 40), container, 'mixed', false, true);
         } else {
             container.innerHTML = '<div class="empty-message">No upcoming streaming releases available.</div>';
@@ -248,7 +267,7 @@ async function loadComingSoon() {
 // Load Everyone's Watching (trending content)
 async function loadEveryoneWatching() {
     const container = document.getElementById('everyone-watching-content');
-    container.innerHTML = '<div class="loader"></div>';
+    container.innerHTML = createSkeletonCards();
 
     try {
         const trendingData = await nh_fetchData(`https://api.themoviedb.org/3/trending/all/day?api_key=${apiKey}&region=US&language=en-US&page=1`);
@@ -282,7 +301,7 @@ async function loadEveryoneWatching() {
 // Load Top 10 TV Shows
 async function loadTop10TVShows() {
     const container = document.getElementById('top-10-tv-content');
-    container.innerHTML = '<div class="loader"></div>';
+    container.innerHTML = createSkeletonCards();
 
     try {
         const tvData = await nh_fetchData(`https://api.themoviedb.org/3/trending/tv/day?api_key=${apiKey}&region=US&language=en-US&page=1`);
@@ -316,7 +335,7 @@ async function loadTop10TVShows() {
 // Load Top 10 Movies
 async function loadTop10Movies() {
     const container = document.getElementById('top-10-movies-content');
-    container.innerHTML = '<div class="loader"></div>';
+    container.innerHTML = createSkeletonCards();
 
     try {
         const movieData = await nh_fetchData(`https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey}&region=US&language=en-US&page=1`);
@@ -443,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load the default active section (Coming Soon)
     loadSectionContent('coming-soon');
 
-        let currentlyPlayingCard = null;
+    let currentlyPlayingCard = null;
 
     function stopCurrentTrailer() {
         if (currentlyPlayingCard) {
@@ -453,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             player.innerHTML = '';
             posterImage.style.display = 'block';
-            if(playOverlay) playOverlay.style.display = 'flex';
+            if (playOverlay) playOverlay.style.display = 'flex';
             currentlyPlayingCard.classList.remove('is-playing');
             currentlyPlayingCard = null;
         }
@@ -478,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const mediaType = remindBtn.dataset.type;
             const title = remindBtn.dataset.title;
             const posterPath = remindBtn.dataset.poster;
-            const releaseDate = (remindBtn.dataset.release || '').slice(0,10);
+            const releaseDate = (remindBtn.dataset.release || '').slice(0, 10);
             try {
                 const res = await nh_apiSend('/api/me/reminders', 'POST', {
                     tmdb_id: itemId,
@@ -488,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     release_date: releaseDate
                 });
                 if (res && res.success) showToast('Reminder set');
-            } catch(err) {
+            } catch (err) {
                 console.error('Failed to set reminder', err);
                 showToast('Could not set reminder');
             }
@@ -517,13 +536,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const playOverlay = posterCard.querySelector('.play-overlay');
 
             posterImage.style.display = 'none';
-            if(playOverlay) playOverlay.style.display = 'none';
+            if (playOverlay) playOverlay.style.display = 'none';
 
             player.innerHTML = `
                 <iframe src="https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&controls=0&showinfo=0"
                         frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             `;
-            
+
             posterCard.classList.add('is-playing');
             currentlyPlayingCard = posterCard;
 
